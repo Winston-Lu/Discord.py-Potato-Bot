@@ -82,4 +82,5 @@ If you didn't know already, your bot token should be in the token.txt file. If y
 ## To Do
 - Image manipulation relies on saving the image temporarily to convert from PIL.Image format to a format pystacia supports. Should convert image through bytecode rather than taking up fileIO
 - Add option to have persistent storage for some commands such as the delete cache, volume settings for servers, etc.
+- Add command execution timeout for Python so /python would not hang the bot on a while(True): loop, that works on both Windows and Unix systems
 - More games that dont require a "secret" hand/board like poker, uno, battleship, etc. Games like minesweeper, solitare, but multiplayer
