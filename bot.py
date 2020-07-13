@@ -872,19 +872,19 @@ async def help(ctx):
     em.description = f"For more information on a command, run '/command help' or '/command'\nAll Caps mean that argument is required, while [square brackets] means that argument is optional"
     em.color = 0x22BBFF
     em.add_field(name="\u200b", value="__**General Commands**__", inline=False)
-    em.add_field(name="/ping", value="```yaml\nGets latency from bot host to Discord servers```", inline=True)
-    em.add_field(name="/clear NUM", value="```yaml\nDeletes NUM amount of messages. /delete and /purge also execute this command```", inline=True)
-    em.add_field(name="/undo", value="```yaml\nRestores messages that was previously deleted by /clear```", inline=True)
-    em.add_field(name="/restore NUM", value=f"```yaml\nRestores NUM messages previously deleted by users, up to\n[up to {MAXUSERDELETEDMESSAGES} per text channel]```", inline=True)
-    em.add_field(name="/say PHRASE", value="```yaml\nMakes bot say what you put in PHRASE```", inline=True)
+    em.add_field(name="/ping", value="Gets latency from bot host to Discord servers", inline=True)
+    em.add_field(name="/clear NUM", value="Deletes NUM amount of messages. /delete and /purge also execute this command", inline=True)
+    em.add_field(name="/undo", value="Restores messages that was previously deleted by /clear", inline=True)
+    em.add_field(name="/restore NUM", value=f"Restores NUM messages previously deleted by users, up to\n[up to {MAXUSERDELETEDMESSAGES} per text channel]", inline=True)
+    em.add_field(name="/say PHRASE", value="Makes bot say what you put in PHRASE", inline=True)
 
     em.add_field(name="\u200b", value="__**Games**__", inline=False)
-    em.add_field(name="/connect4 OPPONENT [width] [height]", value="```yaml\nChallenges OPPONENT to a game of connect 4 on a [width]x[height] board```", inline=True)
+    em.add_field(name="/connect4 OPPONENT [width] [height]", value="Challenges OPPONENT to a game of connect 4 on a [width]x[height] board", inline=True)
 
     em.add_field(name="\u200b", value="__**Images**__", inline=False)
-    em.add_field(name="/fry [IMG | IMG_URL]", value="```yaml\nDeepfries an image attachemnt, image at the url given, or the iamge attachemnt before the command is executed```", inline=True)
-    em.add_field(name="/radial [IMG | IMG_URL] [amount]", value="```yaml\nRadial blurs an image attachemnt, image at the url given, or the iamge attachemnt before the command is executed by [amount] degrees from 1°-30°```", inline=True)
-    em.add_field(name="/swirl [IMG | IMG_URL] [amount]", value="```yaml\nSwirls an image attachemnt, image at the url given, or the iamge attachemnt before the command is executed```", inline=True)
+    em.add_field(name="/fry [IMG | IMG_URL]", value="Deepfries an image attachemnt, image at the url given, or the iamge attachemnt before the command is executed", inline=True)
+    em.add_field(name="/radial [IMG | IMG_URL] [amount]", value="Radial blurs an image attachemnt, image at the url given, or the iamge attachemnt before the command is executed by [amount] degrees from 1°-30°", inline=True)
+    em.add_field(name="/swirl [IMG | IMG_URL] [amount]", value="Swirls an image attachemnt, image at the url given, or the iamge attachemnt before the command is executed", inline=True)
 
     em.add_field(name="\u200b", value="__**Other**__", inline=False)
     em.add_field(name="/python CODE", value="```diff\n-Runs CODE as Python code, only works for specific users due to some security and execution concerns```", inline=True)
@@ -893,7 +893,7 @@ async def help(ctx):
     ## Message cuts off soon due to max embed size capacity, start a new embed
     em = discord.Embed()
     em.title = '__**Music/Voice Commands**__'
-    em.description = "Code heavily based off vbe0201's example on GitHub"
+    em.description = "Thanks to vbe0201's for this example framework"
     em.color = 0x22BBFF
     em.add_field(name="/play URL|SEARCH", value="Plays audio from Youtube URL or search a video", inline=True)
     em.add_field(name="/volume NUM", value="Sets volume from 0% to 200%", inline=True)
