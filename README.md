@@ -4,7 +4,7 @@ A bot for Discord written in Python 3.8 as a general purpose utility bot. This b
 
 For commands, typing /help will bring up a list of commands
 
-## Features type '/help' in Discord for more information
+## Features:  type '/help' in Discord for more information
 ### Music player (Heavily based off vbe0201's example, see Credit for more info)
 join - joins voice channel
 
