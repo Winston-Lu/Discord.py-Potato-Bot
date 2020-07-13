@@ -61,7 +61,7 @@ sudo apt update
 sudo apt install ffmpeg 
 git clone https://github.com/Winston-Lu/Discord.py-Potato-Bot
 cd "Discord.py-Potato-Bot"
-sudo apt-get install libjpeg-dev zlib1g-dev wheel python-wand libmagickwand-dev 
+sudo apt-get install libjpeg-dev zlib1g-dev wheel python-wand libmagickwand-dev imagemagick
 pip3 install -r requirements.txt
 python3 "bot.py"
 ```
