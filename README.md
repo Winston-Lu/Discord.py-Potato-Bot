@@ -73,6 +73,7 @@ cd "Discord.py-Potato-Bot"
 pip3 install -r requirements.txt
 ```
 Then install [ffmpeg.exe from this link](https://ffmpeg.zeranoe.com/builds/), and put it in the Discord.py-Potato-Bot folder
+And [ImageMagick from this link](https://imagemagick.org/script/download.php) 
 ```
 python3 "bot.py"
 ```
