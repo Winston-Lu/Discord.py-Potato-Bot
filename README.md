@@ -79,7 +79,7 @@ python3 "Discord Botv1.1.py"
 ### Token.txt
 If you didn't know already, your bot token should be in the token.txt file. If you don't know how to get your bot token, [follow this guide here](https://www.writebots.com/discord-bot-token/) 
 
-## ToDo
+## To Do
 - Image manipulation relies on saving the image temporarily to convert from PIL.Image format to a format pystacia supports. Should convert image through bytecode rather than taking up fileIO
 - Add persistent storage for some commands such as the delete cache, volume settings for servers, etc.
 - Allow for larger connect 4 board sizes (alternative shorter emoji names?)
