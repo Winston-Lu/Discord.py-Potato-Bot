@@ -61,7 +61,7 @@ sudo apt update
 sudo apt install ffmpeg 
 git clone https://github.com/Winston-Lu/Discord.py-Potato-Bot
 cd "Discord.py-Potato-Bot"
-pip3 install requirements.txt
+pip3 install -r requirements.txt
 python3 "bot.py"
 ```
 
@@ -69,7 +69,7 @@ python3 "bot.py"
 ```
 git clone https://github.com/Winston-Lu/Discord.py-Potato-Bot
 cd "Discord.py-Potato-Bot"
-pip3 install requirements.txt
+pip3 install -r requirements.txt
 ```
 Then install [ffmpeg.exe from this link](https://ffmpeg.zeranoe.com/builds/), and put it in the Discord.py-Potato-Bot folder
 ```
