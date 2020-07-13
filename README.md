@@ -12,7 +12,9 @@ leave - leaves voice channel
 
 play - gets video from url or the search query provided
 
-volume - changes volume **Not working at the moment**
+volume - changes volume
+
+mute - mutes bot, but continues song. Equivalent to volume 0
 
 info - gets inforrmation about the currently playing track
 
@@ -50,7 +52,7 @@ restore - undo manual message deletion, configured to cache up to 50 messages pe
 Connect 4 - Self explanitory, can also change size of board
 
 ## Credit
-For music integration, just about all the code from my music.py file is from [vbe0201's example here](https://gist.github.com/vbe0201/ade9b80f2d3b64643d854938d40a0a2d), with a bit of modification to get some commands to work and edit the error messages
+For music integration, the code from my music.py file was built on top of [vbe0201's example here](https://gist.github.com/vbe0201/ade9b80f2d3b64643d854938d40a0a2d), with a bit modifications to most commands to handle errors, fix broken features, and add additional features
 
 ## Installation
 ### GNU/Linux
@@ -79,6 +81,6 @@ If you didn't know already, your bot token should be in the token.txt file. If y
 
 ## ToDo
 - Image manipulation relies on saving the image temporarily to convert from PIL.Image format to a format pystacia supports. Should convert image through bytecode rather than taking up fileIO
-- Volume in the music commands does not work
+- Add persistent storage for some commands such as the delete cache, volume settings for servers, etc.
 - Allow for larger connect 4 board sizes (alternative shorter emoji names?)
 - More games that dont require a "secret" hand/board like poker, uno, battleship, etc.
