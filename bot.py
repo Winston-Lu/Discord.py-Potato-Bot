@@ -105,20 +105,21 @@ async def python(ctx,*,command=""):
         import re
         if(command.find('```')!=-1 and command.find('```',3)):
             command = command[3:-3].strip()
-        if(command.find('import')!=-1):
+        if(command.find('import')!=-1): #if allowed imports, a reverse shell could spawn. Be careful of what others can import. I just disallowed it
             em = discord.Embed()
             em.title = 'Import Error'
             em.description = 'Additional Imports not allowed for security reasons.'
             em.color = 0xEE3333
             await ctx.send(embed=em)
             return
-        if any (x in command for x in bannedModules):
+        if any (x in command for x in bannedModules): #Some commands that could interact with the host system for enumation
             em = discord.Embed()
             em.title = 'Illegal module call'
             em.description = 'Certain library calls are not allowed'
             em.color = 0xEE3333
             await ctx.send(embed=em)
             return
+        #Could encode disallowed functions/imports and run it with exec/eval. Also finding variable names isnt harmful, but still could find info that shouldnt be needed
         if(command.find('dir(')!=-1 or command.find('globals(')!=-1 or command.find('locals(')!=-1 or command.find('eval(')!=-1 or command.find('exec(')!=-1 or command.find('compile(')!=-1):
             em = discord.Embed()
             em.title = 'Disallowed function errors'
