@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import discord
 from discord.ext import commands
 import asyncio
@@ -8,9 +8,10 @@ import math
 import numpy as np
 import platform
 #Image manipulation
-import pystacia 
 from PIL import Image
 import PIL
+import cv2 as cv
+
 # parse image from URL
 import requests
 from io import BytesIO
@@ -190,25 +191,37 @@ async def clear(ctx,length=""):
         return
     mgs=[]
     if (int(length)>=10):
-        await ctx.send(f"You are about to delete {length} messages, continue? [y/n]")
-        async for x in ctx.channel.history(limit = int(length)+2):
-            mgs.append(x)
+        em = discord.Embed()
+        em.title = 'Warning'
+        em.description = f"You are about to delete {length} messages, continue? [y/n]"
+        em.color = 0xEE9900
+        await ctx.send(embed=em)
+        mgs = await getMessages(ctx,2)
         msg = ""
+        additionalMgsToDelete = 1
         try:
             msg = await bot.wait_for('message',check=lambda message: message.author == ctx.author, timeout=5)
         except asyncio.exceptions.TimeoutError:
             None
-        msg = msg.content.lower().strip()
+        try:
+            msg = msg.content.lower().strip()
+        except AttributeError: #if no message is sent, cant lowercase nothing so throws error
+            msg = 'n'
+            additionalMgsToDelete -= 1
         if(msg=='y'):
-            mgs = []
-            async for x in ctx.channel.history(limit = int(length)+2):
-                mgs.append(x)
+            mgs = await getMessages(ctx,int(length)+2)
         else:
-            await ctx.send("Action cancelled")
+            if(additionalMgsToDelete==1):
+                await ctx.channel.delete_messages(await getMessages(ctx,1))
+            await ctx.channel.delete_messages(mgs)
+            em = discord.Embed()
+            em.title = 'Clear Cancelled'
+            em.description = f"\u200b"
+            em.color = 0xEE9900
+            await ctx.send(embed=em)
+            return
     else:
-        mgs = []
-        async for x in ctx.channel.history(limit = int(length)+1):
-            mgs.append(x)
+        mgs = await getMessages(ctx,int(length)+2)
     removedMessages[ctx.channel.id] = mgs
     await ctx.channel.delete_messages(mgs)
 
@@ -226,7 +239,7 @@ async def clear_error(ctx,error):
     elif isinstance(error, commands.errors.CommandInvokeError):
         em = discord.Embed()
         em.title = 'Error'
-        em.description = f'Could not delete that many messages'
+        em.description = f'Could not delete that many messages. Maximum is 98 (+2 including the /clear and bot prompt already added)'
         em.color = 0xEE0000
         await ctx.send(embed=em)
         return
@@ -246,9 +259,7 @@ async def clear_error(ctx,error):
         return
 
 
-    message = []
-    async for x in ctx.channel.history(limit = 1):
-        message.append(x)
+    message = await getMessages(ctx,1)
     await ctx.send(message[0].attachments[0].url) 
 
 @bot.command(pass_context=True)
@@ -382,8 +393,7 @@ async def connect4(ctx,opponent="",width=7,height=6):
         return
     #----------------------------------------------#
     # Remove challenge message
-    async for x in ctx.channel.history(limit = 1):
-        await ctx.channel.delete_messages([x])
+    await ctx.channel.delete_messages(await getMessages(ctx,1))
     
     # Game init
     resized = False
@@ -413,7 +423,7 @@ async def connect4(ctx,opponent="",width=7,height=6):
     boardMessage = None
     em = discord.Embed()
     if(player1==player2):
-        em.title = f"{player2} challenged themselves to a game of Connect 4 (wow you're lonely)"
+        em.title = f"{player2} challenged themselves to a game of Connect 4 \n(wow you're lonely)"
     else:
         em.title = f'{player2} challenged {player1} to a game of Connect 4'
     em.description = f"{getDisplay()}"
@@ -447,8 +457,7 @@ async def connect4(ctx,opponent="",width=7,height=6):
             slot = int(msg.content)
             if(slot<1 or slot>width):
                 raise ValueError
-            async for x in ctx.channel.history(limit = 1):
-                await ctx.channel.delete_messages([x])
+            await ctx.channel.delete_messages(await getMessages(ctx,1))
             board[height-1][slot-1] = p1
             gameLoop = True
             currentPlayer = player2
@@ -589,8 +598,7 @@ async def connect4(ctx,opponent="",width=7,height=6):
         while not gotValidInput:
             try:
                 msg = await bot.wait_for('message',check=lambda message: message.author.name == currentPlayer, timeout=30)
-                async for x in ctx.channel.history(limit = 1):
-                    await ctx.channel.delete_messages([x])
+                await ctx.channel.delete_messages(await getMessages(ctx,1))
                 slot = int(msg.content)
                 if(slot<1 or slot>width):
                     raise ValueError
@@ -687,9 +695,7 @@ async def getImage(ctx,command="",help="",amount="30"):
             img = Image.open(BytesIO(response.content))
             return((img,int(amount),True))
         except IndexError: #get image above if no image attached
-            imgCache = []
-            async for x in ctx.channel.history(limit = 2):
-                imgCache.append(x)
+            imgCache = await getMessages(ctx,2)
             for x in range(1,len(imgCache)):
                 try:
                     url = imgCache[x].attachments[0].url
@@ -714,15 +720,15 @@ def validateURL(url):
 
 def validateNum(num,command):
     if(command=="radial"):
-        min,max = -180,180
+        min,max = -100,100
     elif(command=="blur"):
-        min,max = -30,30
+        min,max = 1,50
     try:
         return(int(num)>=min and int(num)<=max)
     except ValueError:
         return(False)
 
-## ------------------------------------------------------------------------- Image manipulation: https://pystacia.readthedocs.io/en/latest/image.html ----------------------------------------------------------------------- ##
+## ----------------------------------------------------------------------------------------------- Image manipulation: ------------------------------------------------------------------------------------------------------ ##
 @bot.command(pass_context=True,aliases=['deepfry'])
 async def fry(ctx,help="",amount="0"):
     img,amount,successful = await getImage(ctx,"radial",help,amount)
@@ -745,36 +751,45 @@ async def fry(ctx,help="",amount="0"):
             return
     toDelete = ""
     await ctx.send("Processing...")
-    async for x in ctx.channel.history(limit = 1):
-        toDelete = [x]
+    toDelete = await getMessages(ctx,1)
     # Processing
-    import pystacia.image
-    img.save("fryTemp.png")
-    img = pystacia.image.read('fryTemp.png')
+    img = np.array(img) #convert PIL image to Numpy (CV2 works with numpy BRG arrays)
+    # Convert RGB to BGR 
+    img = cv.cvtColor(np.array(img), cv.COLOR_RGB2BGR)
+    width, height = img.shape[:2]
 
-    img.emboss(2) #edge detection
-    img.brightness(0.5) #increase brightness by 1+n times
-    img.modulate(0,4,0) #dont modify hue, increase saturation, dont modify lightness
-    img.gamma(0.01) #make crusty
-    img.swirl(20)
-    img.wave(30,img.width/3,img.width/8)
-    img.swirl(-40)
-    img.wave(-30,img.width/3,img.width/8)
-    img.trim()
-
-    img.write('fryTemp.png')
-    img.close()
-    img = Image.open("fryTemp.png")
-
-    # Convert to discord sendable format
-    imgByteArr = io.BytesIO()
-    img.save(imgByteArr, format='PNG')
-    imgByteArr.seek(0)
+    #Sharpen
+    kernel = np.array([[-1, -1, -1], [-1, 9, -1], [-1, -1, -1]]) #how to modify a pixel based on surrounding pixels
+    img = cv.filter2D(img, -1, kernel)
+    #Increase brightness
+    value = 30 #default value, change during testing
+    hsv = cv.cvtColor(img, cv.COLOR_BGR2HSV)
+    h, s, v = cv.split(hsv)
+    lim = 255 - value
+    v[v > lim] = 255
+    v[v <= lim] += value
+    final_hsv = cv.merge((h, s, v))
+    img = cv.cvtColor(final_hsv, cv.COLOR_HSV2BGR)
+    #Change gamma and make it crusty
+    gamma = 30
+    table = np.array([((i / 255.0) ** gamma) * 255 for i in np.arange(0, 256)]).astype("uint8")
+    img = cv.LUT(img, table)
+    #Now deform the image a bit
+    from skimage.transform import swirl, PiecewiseAffineTransform, warp #import works here but if at the beginning, breaks the code for some reason
+    #swirl the image at random places
+    for x in range(8):
+        img = swirl(img, strength=((random.random()+1)*-1**x), radius=width/1.4,center=(random.randint(int(width/4),int(width-width/4)),random.randint(int(height/4),int(height-height/4))))
+        img = (img*255).astype('uint8')
+    #convert CV2 Numpy array to PIL
+    img = cv.cvtColor(img, cv.COLOR_BGR2RGB) #Change CV2 BGR to RGB
+    im_pil = Image.fromarray(img)   #Convert to PIL
+    # Convert to an attachable Discord Format
+    arr = io.BytesIO() #convert to bytes array
+    im_pil.save(arr, format='PNG')
+    arr.seek(0) #seek back to beginning of file
     # Send
-    await ctx.send(file=discord.File(imgByteArr,'fried.png'))
+    await ctx.send(file=discord.File(arr,'fry.png'))
     await ctx.channel.delete_messages(toDelete)
-    import os
-    os.remove("fryTemp.png")
 
 @bot.command(pass_context=True,aliases=['radialblur','blur','funny'])
 async def radial(ctx,help="",amount="10"):
@@ -790,7 +805,7 @@ async def radial(ctx,help="",amount="10"):
         else: #Help Command
             em = discord.Embed()
             em.title = f'Usage: /radial [img|imgURL] [amount]'
-            em.description = f'Adds radial blur to the image attached, url in the message, or the image attached before the command by [amount] degrees from -30° to 30°'
+            em.description = f'Adds radial blur to the image attached, url in the message, or the image attached before the command by [amount] from 1 to 50'
             em.add_field(name="Aliases", value="/blur /radialblur /funny", inline=False)
             em.add_field(name="Examples", value="/radialblur https://imgur.com/a/wUChw7w | /blur (imageAttachment) 30", inline=False)
             em.color = 0x22BBFF
@@ -798,28 +813,40 @@ async def radial(ctx,help="",amount="10"):
             return()
     toDelete = ""
     await ctx.send("Processing...")
-    async for x in ctx.channel.history(limit = 1):
-        toDelete = [x]
+    toDelete = await getMessages(ctx,1)
     # Processing
-    img.save("blurTemp.png")
-    img = pystacia.image.read('blurTemp.png')
-    img.radial_blur(amount)
-    img.write('blurTemp.png')
-    img.close()
-    img = Image.open("blurTemp.png")
-    # Convert to discord sendable format
-    imgByteArr = io.BytesIO()
-    img.save(imgByteArr, format='PNG')
-    imgByteArr.seek(0)
+    img = np.array(img) #convert PIL image to Numpy (CV2 works with numpy BRG arrays)
+    # Convert RGB to BGR 
+    img = cv.cvtColor(np.array(img), cv.COLOR_RGB2BGR)
+    w, h = img.shape[:2]
+    # Radial Blur
+    center_x = w / 2
+    center_y = h / 2
+    blur = amount/1000
+    iterations = 5
+    growMapx = np.tile(np.arange(h) + ((np.arange(h) - center_x)*blur), (w, 1)).astype(np.float32)
+    shrinkMapx = np.tile(np.arange(h) - ((np.arange(h) - center_x)*blur), (w, 1)).astype(np.float32)
+    growMapy = np.tile(np.arange(w) + ((np.arange(w) - center_y)*blur), (h, 1)).transpose().astype(np.float32)
+    shrinkMapy = np.tile(np.arange(w) - ((np.arange(w) - center_y)*blur), (h, 1)).transpose().astype(np.float32)
+
+    for i in range(iterations):
+        tmp1 = cv.remap(img, growMapx, growMapy, cv.INTER_LINEAR)
+        tmp2 = cv.remap(img, shrinkMapx, shrinkMapy, cv.INTER_LINEAR)
+        img = cv.addWeighted(tmp1, 0.5, tmp2, 0.5, 0)
+
+    #convert CV2 Numpy array to PIL
+    img = cv.cvtColor(img, cv.COLOR_BGR2RGB) #Change CV2 BGR to RGB
+    im_pil = Image.fromarray(img)   #Convert to PIL
+    # Convert to an attachable Discord Format
+    arr = io.BytesIO() #convert to bytes array
+    im_pil.save(arr, format='PNG')
+    arr.seek(0) #seek back to beginning of file
     # Send
-    await ctx.send(file=discord.File(imgByteArr,'temp.png'))
+    await ctx.send(file=discord.File(arr,'radial.png'))
     await ctx.channel.delete_messages(toDelete)
-    #delete temp file
-    import os
-    os.remove("blurTemp.png")
 
 @bot.command(pass_context=True)
-async def swirl(ctx,help="",amount="90"):
+async def swirl(ctx,help="",amount="10"):
     img,amount,successful = await getImage(ctx,"radial",help,amount)
     if not successful:
         if(amount==0): #Error command
@@ -832,38 +859,32 @@ async def swirl(ctx,help="",amount="90"):
         else: #Help Command
             em = discord.Embed()
             em.title = f'Usage: /swirl [img|imgURL] [amount]'
-            em.description = f'Swirls the image attached, url in the message, or the image attached before the command by [amount] degrees from -360° to 360°'
+            em.description = f'Swirls the image attached, url in the message, or the image attached before the command by [amount] from -100 to 100'
             em.add_field(name="Examples", value="/swirl https://imgur.com/a/wUChw7w | /swirl (imageAttachment) 30", inline=False)
             em.color = 0x22BBFF
             await ctx.send(embed=em)
             return()
-    toDelete = ""
     await ctx.send("Processing...")
-    async for x in ctx.channel.history(limit = 1):
-        toDelete = [x]
+    toDelete = await getMessages(ctx,1)
     # Processing
-    import pystacia.image
-    img.save("swirlTemp.png")
-    img = pystacia.image.read('swirlTemp.png')
-
-    img.swirl(amount)
-
-    img.write('fryTemp.png')
-    img.close()
-    img = Image.open("fryTemp.png")
-
-    # Convert to discord sendable format
-    imgByteArr = io.BytesIO()
-    img.save(imgByteArr, format='PNG')
-    imgByteArr.seek(0)
+    from skimage.transform import swirl #import works here but not at the beginning
+    w,h = img.size
+    img = np.array(img) #convert PIl image to Numpy
+    # Swirl
+    img = swirl(img, strength=amount, radius=w/1.3)
+    img = (img*255).astype('uint8')
+    #convert numpy array to Pillow img
+    im_pil=Image.fromarray(img)
+    # Convert to an attachable Discord Format
+    arr = io.BytesIO() #convert to bytes array
+    im_pil.save(arr, format='PNG')
+    arr.seek(0) #seek back to beginning of file
     # Send
-    await ctx.send(file=discord.File(imgByteArr,'fried.png'))
+    await ctx.send(file=discord.File(arr,'temp.png'))
     await ctx.channel.delete_messages(toDelete)
-    import os
-    os.remove("fryTemp.png")
 
 ## ------------------------------------------------------------------------------------------------------- Music ------------------------------------------------------------------------------------------------------------ ##
-bot.add_cog(music.Music(bot))
+bot.add_cog(music.Music(bot)) #very simple, 2 lines of code to add music (import music), not including the lines in music.py that someone painstakingly wrote that isnt myself
 
 ## ----------------------------------------------------------------------------------------------------- Help Menu ---------------------------------------------------------------------------------------------------------- ##
 @bot.command(pass_context=True,aliases=['commands','commandlist','command','h'])
@@ -884,7 +905,7 @@ async def help(ctx):
 
     em.add_field(name="\u200b", value="__**Images**__", inline=False)
     em.add_field(name="/fry [IMG | IMG_URL]", value="Deepfries an image attachemnt, image at the url given, or the iamge attachemnt before the command is executed", inline=True)
-    em.add_field(name="/radial [IMG | IMG_URL] [amount]", value="Radial blurs an image attachemnt, image at the url given, or the iamge attachemnt before the command is executed by [amount] degrees from 1°-30°", inline=True)
+    em.add_field(name="/radial [IMG | IMG_URL] [amount]", value="Radial blurs an image attachemnt, image at the url given, or the iamge attachemnt before the command is executed", inline=True)
     em.add_field(name="/swirl [IMG | IMG_URL] [amount]", value="Swirls an image attachemnt, image at the url given, or the iamge attachemnt before the command is executed", inline=True)
 
     em.add_field(name="\u200b", value="__**Other**__", inline=False)
@@ -915,8 +936,8 @@ async def help(ctx):
 
 ## ----------------------------------------------------------------------------------------------------- Others ------------------------------------------------------------------------------------------------------------ ##
 @bot.command(pass_context=True)
-async def test(ctx,help=""):
-    print("hi")
+async def test(ctx,help="",amount="10"):
+    pass
 
 @bot.event
 async def on_command_error(ctx,error):
@@ -929,9 +950,18 @@ async def on_command_error(ctx,error):
         return
     elif(str(error).find("'NoneType' object has no attribute '")!=-1):
         pass; #likely from music.py, already handled
+    elif(str(error).find("ClientException: Can only bulk delete messages up to")!=-1):
+        pass; #likely from /clear, already handled
     else:
         raise error
 
+async def getMessages(ctx,number: int=1):
+    if(number==0):
+        return([])
+    toDelete = []
+    async for x in ctx.channel.history(limit = number):
+        toDelete.append(x)
+    return(toDelete)
 
 
 
@@ -951,3 +981,5 @@ file.close()
 bot.run(token)
 ###==============================================###
 
+# Image manipulation resources:
+# CV2 kernel examples: https://towardsdatascience.com/python-opencv-building-instagram-like-image-filters-5c482c1c5079
