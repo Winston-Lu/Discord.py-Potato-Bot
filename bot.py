@@ -29,15 +29,14 @@ MAXUSERDELETEDMESSAGES=50
 
 @bot.event
 async def on_connect():
-    print("Connected to Discord")
+    from time import strftime
+    import time
+    print("Started up on " + strftime("%B-%d-%Y %H:%M:%S", time.localtime()))
+    random.seed(time.time())
 
 @bot.event
 async def on_ready():
-    from time import strftime
-    import time
     await bot.change_presence(status=discord.Status.online, afk=False, activity=discord.Game(name='HuniePop 2: Double Date'))
-    print("Started up on " + strftime("%B-%d-%Y %H:%M:%S", time.localtime()))
-    random.seed(time.time())
 
 ## ------------------------------------------------------------------------------------------------ General commands  ------------------------------------------------------------------------------------------------------- ##
 @bot.event
@@ -83,7 +82,7 @@ async def ping(ctx,help=""):
         return
     import platform
     em = discord.Embed()
-    em.title = f'{platform.system()} {platform.release()} Latency:'
+    em.title = f'{platform.platform()}   Latency:'
     em.description = f'{bot.ws.latency * 1000:.4f} ms'
     em.color = 0xFFA400
     await ctx.send(embed=em)
@@ -951,6 +950,9 @@ async def on_command_error(ctx,error):
     elif(str(error).find("ClientException: Can only bulk delete messages up to")!=-1):
         pass; #likely from /clear, already handled
     else:
+        from time import strftime
+        import time
+        print("Error at time: " + strftime("%B-%d-%Y %H:%M:%S", time.localtime()))
         raise error
 
 async def getMessages(ctx,number: int=1):

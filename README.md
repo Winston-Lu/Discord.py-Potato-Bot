@@ -58,12 +58,13 @@ For music integration, the code from my music.py file was built on top of [vbe02
 ### GNU/Linux
 ```
 sudo apt update
-sudo apt install ffmpeg 
+sudo apt install ffmpeg scikit-image libatlas-base-dev libjasper-dev libqtgui4 python3-pyqt5
 git clone https://github.com/Winston-Lu/Discord.py-Potato-Bot
 cd "Discord.py-Potato-Bot"
 pip3 install -r requirements.txt
 python3 "bot.py"
 ```
+If you are running this on a Raspberry Pi and getting errors, [follow this guide.](https://blog.piwheels.org/how-to-work-out-the-missing-dependencies-for-a-python-package/)
 
 ### Windows (Assumes Python 3 and pip3 is installed)
 ```
@@ -80,7 +81,13 @@ python3 "bot.py"
 If you didn't know already, your bot token should be in the token.txt file. If you don't know how to get your bot token, [follow this guide here](https://www.writebots.com/discord-bot-token/) 
 
 ## To Do
-- Image manipulation relies on saving the image temporarily to convert from PIL.Image format to a format pystacia supports. Should convert image through bytecode rather than taking up fileIO
+### General Improvements
 - Add option to have persistent storage for some commands such as the delete cache, volume settings for servers, etc.
 - Add command execution timeout for Python so /python would not hang the bot on a while(True): loop, that works on both Windows and Unix systems
 - More games that dont require a "secret" hand/board like poker, uno, battleship, etc. Games like minesweeper, solitare, but multiplayer
+- /restore and /undo may get rate-limited if many messages are restored
+### Commands Ideas
+- Google searches
+### If I want to turn this bot into a weeb
+- sauce
+- Hent-ai + DeepCreamPy implementation
