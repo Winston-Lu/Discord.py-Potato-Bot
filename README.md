@@ -61,11 +61,7 @@ sudo apt update
 sudo apt install ffmpeg 
 git clone https://github.com/Winston-Lu/Discord.py-Potato-Bot
 cd "Discord.py-Potato-Bot"
-sudo apt-get install libjpeg-dev zlib1g-dev python-wand libmagickwand-dev imagemagick
 pip3 install -r requirements.txt
-```
-Then install [imagemagick from this link](https://imagemagick.org/script/download.php). I had to manually compile mine from source, but you may be able to just use the pre-complied ones there.
-```
 python3 "bot.py"
 ```
 
@@ -75,7 +71,7 @@ git clone https://github.com/Winston-Lu/Discord.py-Potato-Bot
 cd "Discord.py-Potato-Bot"
 pip3 install -r requirements.txt
 ```
-Then install [ffmpeg.exe from this link](https://ffmpeg.zeranoe.com/builds/), and put it in the Discord.py-Potato-Bot folder, and [ImageMagick from this link](https://imagemagick.org/script/download.php) 
+Then install [ffmpeg.exe from this link](https://ffmpeg.zeranoe.com/builds/), and put it in the Discord.py-Potato-Bot folder
 ```
 python3 "bot.py"
 ```
