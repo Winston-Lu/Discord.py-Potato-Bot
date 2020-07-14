@@ -89,5 +89,5 @@ If you didn't know already, your bot token should be in the token.txt file. If y
 ### Commands Ideas
 - Google searches
 ### If I want to turn this bot into a weeb
-- sauce
+- Sauce for reverse image lookup
 - Hent-ai + DeepCreamPy implementation

@@ -264,7 +264,7 @@ async def clear_error(ctx,error):
 @bot.command(pass_context=True)
 async def undo(ctx,help=""):
     #-------------- Help section ------------------#
-    if(help=="" or help.find('help')!=-1):
+    if(help.find('help')!=-1):
         em = discord.Embed()
         em.title = f'Usage: /undo'
         em.description = f'Resend the deleted messages'
@@ -748,7 +748,7 @@ async def fry(ctx,help="",amount="0"):
             em.color = 0x22BBFF
             await ctx.send(embed=em)
             return
-    await ctx.send("Processing...")
+    await ctx.send("Processing... (This may take a while)")
     toDelete = await getMessages(ctx,1)
     # Processing
     img = np.array(img) #convert PIL image to Numpy (CV2 works with numpy BRG arrays)
@@ -809,7 +809,7 @@ async def radial(ctx,help="",amount="10"):
             em.color = 0x22BBFF
             await ctx.send(embed=em)
             return()
-    await ctx.send("Processing...")
+    await ctx.send("Processing... (This may take a while)")
     toDelete = await getMessages(ctx,1)
     # Processing
     img = np.array(img) #convert PIL image to Numpy (CV2 works with numpy BRG arrays)
@@ -861,7 +861,7 @@ async def swirl(ctx,help="",amount="10"):
             em.color = 0x22BBFF
             await ctx.send(embed=em)
             return()
-    await ctx.send("Processing...")
+    await ctx.send("Processing... (This may take a while)")
     toDelete = await getMessages(ctx,1)
     # Processing
     from skimage.transform import swirl #import works here but not at the beginning
