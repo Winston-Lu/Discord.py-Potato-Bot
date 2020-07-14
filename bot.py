@@ -749,7 +749,6 @@ async def fry(ctx,help="",amount="0"):
             em.color = 0x22BBFF
             await ctx.send(embed=em)
             return
-    toDelete = ""
     await ctx.send("Processing...")
     toDelete = await getMessages(ctx,1)
     # Processing
@@ -811,7 +810,6 @@ async def radial(ctx,help="",amount="10"):
             em.color = 0x22BBFF
             await ctx.send(embed=em)
             return()
-    toDelete = ""
     await ctx.send("Processing...")
     toDelete = await getMessages(ctx,1)
     # Processing
@@ -880,7 +878,7 @@ async def swirl(ctx,help="",amount="10"):
     im_pil.save(arr, format='PNG')
     arr.seek(0) #seek back to beginning of file
     # Send
-    await ctx.send(file=discord.File(arr,'temp.png'))
+    await ctx.send(file=discord.File(arr,'swirl.png'))
     await ctx.channel.delete_messages(toDelete)
 
 ## ------------------------------------------------------------------------------------------------------- Music ------------------------------------------------------------------------------------------------------------ ##
