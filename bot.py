@@ -274,16 +274,39 @@ async def undo(ctx,help=""):
         return
     #----------------------------------------------#
     if (ctx.channel.id in removedMessages):
+        if(len(removedMessages.get(ctx.channel.id))==0):
+            await ctx.send("No deleted messages found on this channel since last restart")
+            return
+        field = 0 
+        em = discord.Embed()
+        em.title = "Deleted messages"
+        em.description = "Messages restored: {len(removedMessages.get(ctx.channel.id))}"
+        em.color = 0xFF6622
         for msg in reversed(removedMessages.get(ctx.channel.id)):
-            em = discord.Embed()
-            em.title = f'{msg.author} (Deleted)'
-            em.description = f'{msg.content}\n'
+            if(field >= 24):
+                 field = 0
+                 await ctx.send(embed=em)
+                 em = discord.Embed()
+                 em.title = "Deleted messages"
+                 em.description = "Messages restored: {len(removedMessages.get(ctx.channel.id))}"
+                 em.color = 0xFF6622
             try:
-                em.add_field(name="Deleted image (image should no longer exist)", value=f"{msg.attachments[0].url}", inline=True)
+                em.add_field(name=f'{msg.author}',value=f'{msg.content} {msg.attachments[0].url}')
             except IndexError:
-                pass
-            em.color = 0xFF6622
-            await ctx.send(embed=em)
+                em.add_field(name=f'{msg.author}',value=f'{msg.content}')
+            field += 1
+        await ctx.send(embed=em)
+
+
+            # em = discord.Embed()
+            # em.title = f'{msg.author} (Deleted)'
+            # em.description = f'{msg.content}\n'
+            # try:
+            #     em.add_field(name="Deleted image (image should no longer exist)", value=f"{msg.attachments[0].url}", inline=True)
+            # except IndexError:
+            #     pass
+            # em.color = 0xFF6622
+            # await ctx.send(embed=em)
     else:
         await ctx.send("No deleted messages found on this channel since last restart")
 
@@ -963,7 +986,10 @@ async def getMessages(ctx,number: int=1):
         toDelete.append(x)
     return(toDelete)
 
-
+@bot.command(pass_context=True)
+async def stop(ctx):
+    if(ctx.author.id==164559470343487488): #only allow myself to run this command for now
+        exit()
 
 
 
