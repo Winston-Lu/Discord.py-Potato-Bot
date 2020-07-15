@@ -1,6 +1,6 @@
 async_timeout==3.0.1
 requests==2.23.0
-opencv-python==4.3.0.36
+opencv-contrib-python==4.1.0.25
 youtube_dl==2020.6.16.1
 scikit_image==0.17.2
 numpy==1.17.4
