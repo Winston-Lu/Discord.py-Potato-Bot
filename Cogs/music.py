@@ -274,14 +274,14 @@ class Music(commands.Cog):
     async def cog_command_error(self, ctx: commands.Context, error: commands.CommandError):
         if(str(error).find("'NoneType' object has no attribute 'is_playing'")!=-1 or str(error).find("'NoneType' object has no attribute 'requester'")!=-1): #pause when nothing plays or skip when there is nothing playing
             em = discord.Embed()
-            em.title = 'Error'
+            em.title = 'Error: Music'
             em.description = f"Nothing is playing"
             em.color = 0xEE0000
             await ctx.send(embed=em)
             return
         elif(str(error).find("'NoneType' object has no attribute 'is_paused'")!=-1): #resume when nothing is paused
             em = discord.Embed()
-            em.title = 'Error'
+            em.title = 'Error: Music'
             em.description = f"Nothing is paused"
             em.color = 0xEE0000
             await ctx.send(embed=em)
@@ -290,7 +290,7 @@ class Music(commands.Cog):
             pass #error handled already
         else:
             em = discord.Embed()
-            em.title = 'Error'
+            em.title = 'Error: Music'
             em.description = f"{error}"
             em.color = 0xEE0000
             await ctx.send(embed=em)

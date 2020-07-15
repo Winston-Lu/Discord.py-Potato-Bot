@@ -1,4 +1,4 @@
 token.txt
 ffmpeg.exe
-__pycache__
+.*__pycache__
 cached/
