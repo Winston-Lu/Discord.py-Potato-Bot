@@ -41,6 +41,8 @@ radial - radial blurs an image
 
 swirl - swirls an image
 
+warp -  randomly warps an image through random effects
+
 ### Chat clearing/restore
 clear - bulk delete
 
@@ -83,11 +85,9 @@ If you didn't know already, your bot token should be in the token.txt file. If y
 ## To Do
 ### General Improvements
 - Add option to have persistent storage for some commands such as the delete cache, volume settings for servers, etc.
-- Add command execution timeout for Python so /python would not hang the bot on a while(True): loop, that works on both Windows and Unix systems
 - More games that dont require a "secret" hand/board like poker, uno, battleship, etc. Games like minesweeper, solitare, but multiplayer
-- /restore and /undo may get rate-limited if many messages are restored
 ### Commands Ideas
 - Google searches
-### If I want to turn this bot into a weeb
+### If I want to turn this bot into a weeb (seperate nsfw module)
 - Sauce for reverse image lookup
 - Hent-ai + DeepCreamPy implementation

@@ -177,7 +177,7 @@ async def clear(ctx,length=""):
         if(int(length)<1 or int(length)>100):
             em = discord.Embed()
             em.title = 'Command Argument Error'
-            em.description = f'Enter a length between 1-100'
+            em.description = f'Enter a length between 1-97'
             em.color = 0xEE0000
             await ctx.send(embed=em)
             return
@@ -208,7 +208,7 @@ async def clear(ctx,length=""):
             msg = 'n'
             additionalMgsToDelete -= 1
         if(msg=='y'):
-            mgs = await getMessages(ctx,int(length)+2)
+            mgs = await getMessages(ctx,int(length)+3)
         else:
             if(additionalMgsToDelete==1):
                 await ctx.channel.delete_messages(await getMessages(ctx,1))
@@ -238,7 +238,7 @@ async def clear_error(ctx,error):
     elif isinstance(error, commands.errors.CommandInvokeError):
         em = discord.Embed()
         em.title = 'Error'
-        em.description = f'Could not delete that many messages. Maximum is 98 (+2 including the /clear and bot prompt already added)'
+        em.description = f'Could not delete that many messages. Maximum is 97 (+3 including the /clear, bot prompt, and  already added)'
         em.color = 0xEE0000
         await ctx.send(embed=em)
         return
@@ -274,16 +274,30 @@ async def undo(ctx,help=""):
         return
     #----------------------------------------------#
     if (ctx.channel.id in removedMessages):
+        if(len(removedMessages.get(ctx.channel.id))==0):
+            await ctx.send("No deleted messages found on this channel since last restart")
+            return
+        field = 0 
+        em = discord.Embed()
+        em.title = "Deleted messages"
+        em.description = f"Messages restored: {len(removedMessages.get(ctx.channel.id))}"
+        em.color = 0xFF6622
         for msg in reversed(removedMessages.get(ctx.channel.id)):
-            em = discord.Embed()
-            em.title = f'{msg.author} (Deleted)'
-            em.description = f'{msg.content}\n'
+            if(field >= 25):
+                 field = 0
+                 await ctx.send(embed=em)
+                 em = discord.Embed()
+                 em.title = "Deleted messages"
+                 em.description = f"Continued:"
+                 em.color = 0xFF6622
+            if (len(msg.content)==0): #usually embeds have no msg content
+                msg.content = "[No Msg Found, Likely an embed]"
             try:
-                em.add_field(name="Deleted image (image should no longer exist)", value=f"{msg.attachments[0].url}", inline=True)
+                em.add_field(name=f'{msg.author}',value=f'{msg.content} {msg.attachments[0].url}',inline=False)
             except IndexError:
-                pass
-            em.color = 0xFF6622
-            await ctx.send(embed=em)
+                em.add_field(name=f'{msg.author}',value=f'{msg.content}',inline=False)
+            field += 1
+        await ctx.send(embed=em)
     else:
         await ctx.send("No deleted messages found on this channel since last restart")
 
@@ -331,14 +345,27 @@ async def restore(ctx,value=""):
         if(value > messageLength):
             value = messageLength
         messageList = messages[messageLength-value:]
+        field = 0 
+        em = discord.Embed()
+        em.title = "Deleted messages"
+        em.description = f"Restoring {value} messages"
+        em.color = 0xFF6622
         for msg in reversed(messageList):
-            em = discord.Embed()
-            em.title = f'{msg[0]} (Deleted)'
-            em.description = f'{msg[1]}'
-            if(len(msg)==3):
-                em.add_field(name="Deleted image (image should no longer exist)", value=f"{msg[3]}", inline=True)
-            em.color = 0xFF6622
-            await ctx.send(embed=em)
+            if(field >= 25):
+                 field = 0
+                 await ctx.send(embed=em)
+                 em = discord.Embed()
+                 em.title = "Deleted messages"
+                 em.description = f"Continued:"
+                 em.color = 0xFF6622
+            if (len(msg[1])==0): #usually embeds have no msg content
+                msg[1] = "[No Msg Found, Likely an embed]"
+            if (len(msg)==3):
+                em.add_field(name=f'{msg[0]}',value=f'{msg[1]} {msg[2]}',inline=False)
+            else:
+                em.add_field(name=f'{msg[0]}',value=f'{msg[1]}',inline=False)
+            field += 1
+        await ctx.send(embed=em)
     else:
         await ctx.send("Did not find any deleted messages since last restart")
     
@@ -668,7 +695,7 @@ async def connect4(ctx,opponent="",width=7,height=6):
         await boardMessage.edit(embed=em)
 
 ## --------------------------------------------------------------------------------------------- Image Helper functions ----------------------------------------------------------------------------------------------------- ##
-async def getImage(ctx,command="",help="",amount="30"):
+async def getImage(ctx,command="",help="",amount="30",amount2="1"):
     if(help=="help"):
         return(("",1,False)) #help command
     if(help!=""): #if given url or number
@@ -722,6 +749,8 @@ def validateNum(num,command):
         min,max = -100,100
     elif(command=="blur"):
         min,max = 1,50
+    elif(command=="fry"):
+        min,max = 1,500
     try:
         return(int(num)>=min and int(num)<=max)
     except ValueError:
@@ -729,8 +758,8 @@ def validateNum(num,command):
 
 ## ----------------------------------------------------------------------------------------------- Image manipulation: ------------------------------------------------------------------------------------------------------ ##
 @bot.command(pass_context=True,aliases=['deepfry'])
-async def fry(ctx,help="",amount="0"):
-    img,amount,successful = await getImage(ctx,"radial",help,amount)
+async def fry(ctx,help="",amount="20"):
+    img,amount,successful = await getImage(ctx,"fry",help,amount)
     if not successful:
         if(amount==0): #Error command
             em = discord.Embed()
@@ -741,8 +770,8 @@ async def fry(ctx,help="",amount="0"):
             return
         else: #Help Command
             em = discord.Embed()
-            em.title = f'Usage: /fry [img|imgURL]'
-            em.description = f'Deep-fries the image attached, url in the message, or the image attached before the command'
+            em.title = f'Usage: /fry [img|imgURL] [gamma]'
+            em.description = f'Deep-fries the image attached, url in the message, or the image attached before the command. Change gamma based on how dark the image is. Default gamma value is 20, range 1-500. Saturation default 3, range: 1-50'
             em.add_field(name="Aliases", value="/deepfry", inline=False)
             em.add_field(name="Examples", value="/fry https://imgur.com/a/wUChw7w | /deepfry (imageAttachment)", inline=False)
             em.color = 0x22BBFF
@@ -755,12 +784,8 @@ async def fry(ctx,help="",amount="0"):
     # Convert RGB to BGR 
     img = cv.cvtColor(np.array(img), cv.COLOR_RGB2BGR)
     width, height = img.shape[:2]
-
-    #Sharpen
-    kernel = np.array([[-1, -1, -1], [-1, 9, -1], [-1, -1, -1]]) #how to modify a pixel based on surrounding pixels
-    img = cv.filter2D(img, -1, kernel)
     #Increase brightness
-    value = 30 #default value, change during testing
+    value = int(amount)*6 #default multiplier, change depending on dark/light images
     hsv = cv.cvtColor(img, cv.COLOR_BGR2HSV)
     h, s, v = cv.split(hsv)
     lim = 255 - value
@@ -768,12 +793,15 @@ async def fry(ctx,help="",amount="0"):
     v[v <= lim] += value
     final_hsv = cv.merge((h, s, v))
     img = cv.cvtColor(final_hsv, cv.COLOR_HSV2BGR)
+    #Sharpen
+    kernel = np.array([[-1, -1, -1], [-1, 9, -1], [-1, -1, -1]]) #how to modify a pixel based on surrounding pixels
+    img = cv.filter2D(img, -1, kernel)
     #Change gamma and make it crusty
-    gamma = 30
+    gamma = int(amount)
     table = np.array([((i / 255.0) ** gamma) * 255 for i in np.arange(0, 256)]).astype("uint8")
     img = cv.LUT(img, table)
     #Now deform the image a bit
-    from skimage.transform import swirl, PiecewiseAffineTransform, warp #import works here but if at the beginning, breaks the code for some reason
+    from skimage.transform import swirl #import works here but if at the beginning, breaks the code for some reason
     #swirl the image at random places
     for x in range(8):
         img = swirl(img, strength=((random.random()+1)*-1**x), radius=width/1.4,center=(random.randint(int(width/4),int(width-width/4)),random.randint(int(height/4),int(height-height/4))))
@@ -781,6 +809,12 @@ async def fry(ctx,help="",amount="0"):
     #convert CV2 Numpy array to PIL
     img = cv.cvtColor(img, cv.COLOR_BGR2RGB) #Change CV2 BGR to RGB
     im_pil = Image.fromarray(img)   #Convert to PIL
+    # Increase saturation
+    from PIL import ImageEnhance
+    from PIL import ImageFilter
+    converter = PIL.ImageEnhance.Color(im_pil)
+    im_pil = converter.enhance(0.4)
+    im_pil = im_pil.filter(ImageFilter.EDGE_ENHANCE_MORE) #add edge detection
     # Convert to an attachable Discord Format
     arr = io.BytesIO() #convert to bytes array
     im_pil.save(arr, format='PNG')
@@ -880,6 +914,47 @@ async def swirl(ctx,help="",amount="10"):
     await ctx.send(file=discord.File(arr,'swirl.png'))
     await ctx.channel.delete_messages(toDelete)
 
+@bot.command(pass_context=True)
+async def warp(ctx,help="",amount="0"):
+    img,amount,successful = await getImage(ctx,"warp",help,amount)
+    if not successful:
+        if(amount==0): #Error command
+            em = discord.Embed()
+            em.title = f'Error when running command'
+            em.description = f"Error: {img}."
+            em.color = 0xEE0000
+            await ctx.send(embed=em)
+            return
+        else: #Help Command
+            em = discord.Embed()
+            em.title = f'Usage: /warp [img|imgURL]'
+            em.description = f'Randomly warps the image attached, url in the message, or the image attached before the command'
+            em.add_field(name="Examples", value="/warp https://imgur.com/a/wUChw7w | /warp (imageAttachment)", inline=False)
+            em.color = 0x22BBFF
+            await ctx.send(embed=em)
+            return()
+    await ctx.send("Processing... (This may take a while)")
+    toDelete = await getMessages(ctx,1)
+    # Processing
+    from skimage.transform import swirl #import works here but not at the beginning
+    img = np.array(img) #convert PIl image to Numpy
+    # Swirl
+    width, height = img.shape[:2]
+    for x in range(5):
+        img = swirl(img, strength=((random.random()+1)*-1**x), radius=width/1.4,center=(random.randint(int(width/4),int(width-width/4)),random.randint(int(height/4),int(height-height/4))))
+        img = (img*255).astype('uint8')
+    #convert numpy array to Pillow img
+    im_pil=Image.fromarray(img)
+    # Convert to an attachable Discord Format
+    arr = io.BytesIO() #convert to bytes array
+    im_pil.save(arr, format='PNG')
+    arr.seek(0) #seek back to beginning of file
+    # Send
+    await ctx.send(file=discord.File(arr,'warp.png'))
+    await ctx.channel.delete_messages(toDelete)
+
+
+
 ## ------------------------------------------------------------------------------------------------------- Music ------------------------------------------------------------------------------------------------------------ ##
 bot.add_cog(music.Music(bot)) #very simple, 2 lines of code to add music (import music), not including the lines in music.py that someone painstakingly wrote that isnt myself
 
@@ -901,12 +976,13 @@ async def help(ctx):
     em.add_field(name="/connect4 OPPONENT [width] [height]", value="Challenges OPPONENT to a game of connect 4 on a [width]x[height] board", inline=True)
 
     em.add_field(name="\u200b", value="__**Images**__", inline=False)
-    em.add_field(name="/fry [IMG | IMG_URL]", value="Deepfries an image attachemnt, image at the url given, or the iamge attachemnt before the command is executed", inline=True)
-    em.add_field(name="/radial [IMG | IMG_URL] [amount]", value="Radial blurs an image attachemnt, image at the url given, or the iamge attachemnt before the command is executed", inline=True)
-    em.add_field(name="/swirl [IMG | IMG_URL] [amount]", value="Swirls an image attachemnt, image at the url given, or the iamge attachemnt before the command is executed", inline=True)
+    em.add_field(name="/fry [img | img_url] [gamma]", value="Deepfries an image attachemnt, image at the url given, or the iamge attachemnt before the command is executed", inline=True)
+    em.add_field(name="/radial [img | img_url] [amount]", value="Radial blurs an image attachemnt, image at the url given, or the iamge attachemnt before the command is executed", inline=True)
+    em.add_field(name="/swirl [img | img_url] [amount]", value="Swirls an image attachemnt, image at the url given, or the iamge attachemnt before the command is executed", inline=True)
+    em.add_field(name="/warp [img | img_url]", value="Randomly warps an image attachemnt, image at the url given, or the iamge attachemnt before the command is executed", inline=True)
 
     em.add_field(name="\u200b", value="__**Other**__", inline=False)
-    em.add_field(name="/python CODE", value="```diff\n-Runs CODE as Python code, only works for specific users due to some security and execution concerns```", inline=True)
+    #em.add_field(name="/python CODE", value="```diff\n-Runs CODE as Python code, only works for specific users due to some security and execution concerns```", inline=True)
     em.add_field(name="On Messages", value="Longer phallic emojis\nAdded warning for mentioning underage children", inline=False)
     await ctx.send(embed=em)
     ## Message cuts off soon due to max embed size capacity, start a new embed
@@ -934,7 +1010,8 @@ async def help(ctx):
 ## ----------------------------------------------------------------------------------------------------- Others ------------------------------------------------------------------------------------------------------------ ##
 @bot.command(pass_context=True)
 async def test(ctx,help="",amount="10"):
-    pass
+    for x in range (26):
+        await ctx.send(str(x))
 
 @bot.event
 async def on_command_error(ctx,error):
@@ -963,7 +1040,10 @@ async def getMessages(ctx,number: int=1):
         toDelete.append(x)
     return(toDelete)
 
-
+@bot.command(pass_context=True)
+async def exit(ctx):
+    if(ctx.author.id==164559470343487488): #only allow myself to run this command for now
+        exit()
 
 
 
