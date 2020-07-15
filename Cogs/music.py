@@ -278,23 +278,20 @@ class Music(commands.Cog):
             em.description = f"Nothing is playing"
             em.color = 0xEE0000
             await ctx.send(embed=em)
-            return
         elif(str(error).find("'NoneType' object has no attribute 'is_paused'")!=-1): #resume when nothing is paused
             em = discord.Embed()
             em.title = 'Error: Music'
             em.description = f"Nothing is paused"
             em.color = 0xEE0000
             await ctx.send(embed=em)
-            return
         elif(str(error).find("'NoneType' object has no attribute 'channel'")!=-1): #when asked to play but no one is in channel
             pass #error handled already
         else:
             em = discord.Embed()
-            em.title = 'Error: Music'
+            em.title = f'Error: {__name__}'
             em.description = f"{error}"
             em.color = 0xEE0000
             await ctx.send(embed=em)
-            return
 
     @commands.command(name='join', invoke_without_subcommand=True)
     async def _join(self, ctx: commands.Context):
@@ -610,6 +607,3 @@ class Music(commands.Cog):
                 em.color = 0xEE0000
                 await ctx.send(embed=em)
                 return
-
-if __name__ == '__main__':
-    import bot #if this file is run instead of the bot.py file, run the bot file instead

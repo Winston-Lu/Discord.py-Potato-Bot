@@ -297,7 +297,6 @@ class Games(commands.Cog):
 
 
 
-
     async def getMessages(self,ctx: commands.Context,number: int=1):
         if(number==0):
             return([])
@@ -308,8 +307,7 @@ class Games(commands.Cog):
 
     async def cog_command_error(self, ctx: commands.Context, error: commands.CommandError):
         em = discord.Embed()
-        em.title = 'Error: Games'
+        em.title = f'Error: {__name__}'
         em.description = f"{error}"
         em.color = 0xEE0000
         await ctx.send(embed=em)
-        return

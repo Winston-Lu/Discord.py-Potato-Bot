@@ -71,9 +71,6 @@ python3 "bot.py"
 If you didn't know already, your bot token should be in the token.txt file. If you don't know how to get your bot token, [follow this guide here](https://www.writebots.com/discord-bot-token/) 
 
 ## **To Do**
-### Commands Ideas
-- Google searches
-- Reaction Polls
 ### Games
 - More games that dont require a "secret" hand/board like poker, uno, battleship, etc. Games like minesweeper, solitare, but multiplayer
 ### If I want to turn this bot into a weeb (seperate nsfw module)
