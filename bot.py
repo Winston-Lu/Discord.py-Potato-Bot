@@ -5,8 +5,10 @@ import asyncio
 
 import random
 import math 
+import time
 import numpy as np
 import platform
+import threading
 #Image manipulation
 from PIL import Image
 import PIL
@@ -22,15 +24,18 @@ import music
 bot = commands.Bot(command_prefix='/',description="Gaem suxs")
 bot.remove_command('help')
 
-
 removedMessages = {} #removed by bot
 userDeletedMessages = {} #removed by user
-MAXUSERDELETEDMESSAGES=50
+
+MAX_USER_DELETED_MESSAGES=50
+MAX_BULK_MESSAGES=100
+#if you want to save removed messages and user deleted messages even after rebooting the bot, as well as see currently purged messages
+PERSISTENT_STORAGE = True   
+SAVE_TIMER = 600 #in seconds
 
 @bot.event
-async def on_connect():
+async def on_connect(): #Running this during on_connect since bots can parse commands after on_connect, which occurs before on_ready
     from time import strftime
-    import time
     print("Started up on " + strftime("%B-%d-%Y %H:%M:%S", time.localtime()))
     random.seed(time.time())
 
@@ -100,7 +105,7 @@ async def python(ctx,*,command=""):
         await ctx.send(embed=em)
         return
     #----------------------------------------------#
-    bannedModules = ["functools","itertools","youtube_dl",'StringIO','requests.','io.','BytesIO(','platform.','sys.','open(']
+    bannedModules = ["functools","itertools","youtube_dl",'StringIO','requests.','io.','BytesIO(','platform.','sys.','open(','threading.']
     if(ctx.author.id==164559470343487488): #only allow myself to run this command for now
         import re
         if(command.find('```')!=-1 and command.find('```',3)):
@@ -220,8 +225,23 @@ async def clear(ctx,length=""):
             await ctx.send(embed=em)
             return
     else:
-        mgs = await getMessages(ctx,int(length)+2)
-    removedMessages[ctx.channel.id] = mgs
+        mgs = await getMessages(ctx,int(length)+1)
+    ## Store deleted messages in a cache
+    messageCache = []
+    for m in mgs:
+        try:
+            messageCache.append((m.author,m.content,m.attachments[0].url))
+        except IndexError:
+            messageCache.append((m.author,m.content))
+    #Limit the amount of messages cached to MAXBULKMESSAGES. Messages are stored as a stack
+    existingMsgs = removedMessages.get(ctx.channel.id)
+    if existingMsgs is not None:
+        for existingMsg in existingMsgs:
+            messageCache.append(existingMsg)
+        if(len(existingMsgs)>MAX_BULK_MESSAGES):
+            messageCache = messageCache[:MAX_BULK_MESSAGES] #say you have 25 msg max and you have a 28 msg cache. We take from [0:25), (0-indexed, so 25 is the 26th element)
+    removedMessages[ctx.channel.id] =  messageCache
+    ##delete messages specified by the user
     await ctx.channel.delete_messages(mgs)
 
 @clear.error
@@ -283,19 +303,29 @@ async def undo(ctx,help=""):
         em.description = f"Messages restored: {len(removedMessages.get(ctx.channel.id))}"
         em.color = 0xFF6622
         for msg in reversed(removedMessages.get(ctx.channel.id)):
-            if(field >= 25):
+            if(field >= 23):
                  field = 0
                  await ctx.send(embed=em)
                  em = discord.Embed()
                  em.title = "Deleted messages"
                  em.description = f"Continued:"
                  em.color = 0xFF6622
-            if (len(msg.content)==0): #usually embeds have no msg content
-                msg.content = "[No Msg Found, Likely an embed]"
-            try:
-                em.add_field(name=f'{msg.author}',value=f'{msg.content} {msg.attachments[0].url}',inline=False)
-            except IndexError:
-                em.add_field(name=f'{msg.author}',value=f'{msg.content}',inline=False)
+            if (len(msg[1])==0): #usually embeds have no msg content
+                msg[1] = "[No Msg Found, Likely an embed]"
+            if (len(msg)==3):
+                if(len(msg[1])>1020):
+                    em.add_field(name=f'{msg[0]}',value=f'{msg[1][:1020]} {msg[2]}',inline=False)
+                    em.add_field(name=f'{msg[0]} cont.',value=f'{msg[1][1020:]} {msg[2]}',inline=False)
+                    field+=1
+                else:
+                    em.add_field(name=f'{msg[0]}',value=f'{msg[1]} {msg[2]}',inline=False)
+            else:
+                if(len(msg[1])>1020):
+                    em.add_field(name=f'{msg[0]}',value=f'{msg[1][:1020]}',inline=False)
+                    em.add_field(name=f'{msg[0]} cont.',value=f'{msg[1][1020:]}',inline=False)
+                    field+=1
+                else:
+                    em.add_field(name=f'{msg[0]}',value=f'{msg[1]}',inline=False)
             field += 1
         await ctx.send(embed=em)
     else:
@@ -325,7 +355,7 @@ async def restore(ctx,value=""):
     if(value=="" or value.find('help')!=-1):
         em = discord.Embed()
         em.title = f'Usage: /restore [x]'
-        em.description = f'Restores [x] previously deleted messages by a user in the order they were deleted up to {MAXUSERDELETEDMESSAGES} per text channel'
+        em.description = f'Restores [x] previously deleted messages by a user in the order they were deleted up to {MAX_USER_DELETED_MESSAGES} per text channel'
         em.add_field(name="Example", value="/restore 5", inline=False)
         em.color = 0x22BBFF
         await ctx.send(embed=em)
@@ -351,7 +381,7 @@ async def restore(ctx,value=""):
         em.description = f"Restoring {value} messages"
         em.color = 0xFF6622
         for msg in reversed(messageList):
-            if(field >= 25):
+            if(field >= 23):
                  field = 0
                  await ctx.send(embed=em)
                  em = discord.Embed()
@@ -361,9 +391,19 @@ async def restore(ctx,value=""):
             if (len(msg[1])==0): #usually embeds have no msg content
                 msg[1] = "[No Msg Found, Likely an embed]"
             if (len(msg)==3):
-                em.add_field(name=f'{msg[0]}',value=f'{msg[1]} {msg[2]}',inline=False)
+                if(len(msg[1])>1020):
+                    em.add_field(name=f'{msg[0]}',value=f'{msg[1][:1020]} {msg[2]}',inline=False)
+                    em.add_field(name=f'{msg[0]} cont.',value=f'{msg[1][1020:]} {msg[2]}',inline=False)
+                    field+=1
+                else:
+                    em.add_field(name=f'{msg[0]}',value=f'{msg[1]} {msg[2]}',inline=False)
             else:
-                em.add_field(name=f'{msg[0]}',value=f'{msg[1]}',inline=False)
+                if(len(msg[1])>1020):
+                    em.add_field(name=f'{msg[0]}',value=f'{msg[1][:1020]}',inline=False)
+                    em.add_field(name=f'{msg[0]} cont.',value=f'{msg[1][1020:]}',inline=False)
+                    field+=1
+                else:
+                    em.add_field(name=f'{msg[0]}',value=f'{msg[1]}',inline=False)
             field += 1
         await ctx.send(embed=em)
     else:
@@ -953,8 +993,6 @@ async def warp(ctx,help="",amount="0"):
     await ctx.send(file=discord.File(arr,'warp.png'))
     await ctx.channel.delete_messages(toDelete)
 
-
-
 ## ------------------------------------------------------------------------------------------------------- Music ------------------------------------------------------------------------------------------------------------ ##
 bot.add_cog(music.Music(bot)) #very simple, 2 lines of code to add music (import music), not including the lines in music.py that someone painstakingly wrote that isnt myself
 
@@ -969,7 +1007,7 @@ async def help(ctx):
     em.add_field(name="/ping", value="Gets latency from bot host to Discord servers", inline=True)
     em.add_field(name="/clear NUM", value="Deletes NUM amount of messages. /delete and /purge also execute this command", inline=True)
     em.add_field(name="/undo", value="Restores messages that was previously deleted by /clear", inline=True)
-    em.add_field(name="/restore NUM", value=f"Restores NUM messages previously deleted by users, up to\n[up to {MAXUSERDELETEDMESSAGES} per text channel]", inline=True)
+    em.add_field(name="/restore NUM", value=f"Restores NUM messages previously deleted by users, up to\n[up to {MAX_USER_DELETED_MESSAGES} per text channel]", inline=True)
     em.add_field(name="/say PHRASE", value="Makes bot say what you put in PHRASE", inline=True)
 
     em.add_field(name="\u200b", value="__**Games**__", inline=False)
@@ -1010,6 +1048,10 @@ async def help(ctx):
 ## ----------------------------------------------------------------------------------------------------- Others ------------------------------------------------------------------------------------------------------------ ##
 @bot.command(pass_context=True)
 async def test(ctx,help="",amount="10"):
+    print(userDeletedMessages)
+    
+@bot.command(pass_context=True)
+async def spam(ctx,help="",amount="10"):   
     for x in range (26):
         await ctx.send(str(x))
 
@@ -1046,11 +1088,93 @@ async def exit(ctx):
         exit()
 
 
+# Read from file
+def readCache():
+    try:
+        with open("cached/usermsg.txt",encoding="UTF-8") as f:
+            line = f.readline()
+            while(len(line)!=0):
+                elements = line.split("ʒ")
+                msgList = []
+                for msg in elements[1:]:
+                    newMsg = msg.split("ˤ")
+                    msgList.append(newMsg)
+                userDeletedMessages[int(elements[0])] = msgList
+                line = f.readline()
+            f.close()
+    except FileNotFoundError:
+        import os
+        try:
+            os.makedirs('cached')
+        except FileExistsError:
+            pass
+        with open(os.path.join('cached', 'usermsg.txt'), 'w') as temp_file:
+            temp_file.write("")
+    try:
+        with open("cached/bulkmsg.txt",encoding="UTF-8") as f:
+            line = f.readline()
+            while(len(line)!=0):
+                elements = line.split("ʒ")
+                msgList = []
+                for msg in elements[1:]:
+                    newMsg = msg.split("ˤ")
+                    msgList.append(newMsg)
+                removedMessages[int(elements[0])] = msgList
+                line = f.readline()
+            f.close()
+    except FileNotFoundError:
+        import os
+        try:
+            os.makedirs('cached')
+        except FileExistsError:
+            pass
+        with open(os.path.join('cached', 'bulkmsg.txt'), 'w') as temp_file:
+            temp_file.write("")
 
+# Save to file
+runningThreads = [None]
+def saveCache(firstRun = False):
+    try:
+        if(runningThreads[0].is_alive()): #prevent conflicting file IO if this function is called
+            runningThreads[0].cancel()
+    except AttributeError: #no threads.
+        pass
 
+    if not firstRun: #no need to write on init
+        # Write userDeletedMessages
+        with open("cached/usermsg.txt",'wb') as f:
+            f.truncate() #clear file
+            channels = userDeletedMessages.keys()
+            for channel in channels:
+                toWrite = f"{channel}".encode("UTF-8") #should just be strings, but sticking to the format
+                for msg in userDeletedMessages.get(channel):
+                    if(len(msg)==3):
+                        toWrite += (f"ʒ{msg[0]}ˤ{' '.join(msg[1].splitlines())}ˤ{msg[2]}").encode("UTF-8")  #use ˤ as a seperation character, as it isnt used very much in normal messages
+                    else:
+                        toWrite += (f"ʒ{msg[0]}ˤ{' '.join(msg[1].splitlines())}").encode("UTF-8")
+                f.write(toWrite)
+            f.close()
+        # Write removedMessages
+        with open("cached/bulkmsg.txt",'wb') as f:
+            f.truncate() #clear file
+            channels = removedMessages.keys()
+            for channel in channels:
+                toWrite = f"{channel}".encode("UTF-8") #should just be strings, but sticking to the format
+                for msg in removedMessages.get(channel):
+                    if(len(msg)==3):
+                        toWrite += (f"ʒ{msg[0]}ˤ{' '.join(msg[1].splitlines())}ˤ{msg[2]}").encode("UTF-8")  #use ˤ as a seperation character, as it isnt used very much in normal messages
+                    else:
+                        toWrite += (f"ʒ{msg[0]}ˤ{' '.join(msg[1].splitlines())}").encode("UTF-8")
+                f.write(toWrite)
+            f.close()
+    timer = threading.Timer(SAVE_TIMER, saveCache)
+    timer.start()
+    runningThreads[0] = timer
 
-
-
+#If enabled storing deleted messages
+if(PERSISTENT_STORAGE):
+    readCache()
+    saveCache()
 
 
 
