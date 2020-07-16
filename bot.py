@@ -447,6 +447,8 @@ bot.add_cog(images.Images(bot))
 bot.add_cog(games.Games(bot))
 ## ---------------------- Music ----------------------------- ##
 bot.add_cog(music.Music(bot)) #very simple, 2 lines of code to add music (import music), not including the lines in music.py that someone painstakingly wrote that isnt myself
+## ----------------- Google Searches ------------------------ ##
+bot.add_cog(google.Google(bot))
 
 ## ------------------- Help Menu ---------------------------- ##
 
@@ -471,6 +473,11 @@ async def help(ctx):
     em.add_field(name="/radial [img | img_url] [amount]", value="Radial blurs an image attachemnt, image at the url given, or the iamge attachemnt before the command is executed", inline=True)
     em.add_field(name="/swirl [img | img_url] [amount]", value="Swirls an image attachemnt, image at the url given, or the iamge attachemnt before the command is executed", inline=True)
     em.add_field(name="/warp [img | img_url]", value="Randomly warps an image attachemnt, image at the url given, or the iamge attachemnt before the command is executed", inline=True)
+
+    em.add_field(name="\u200b", value="__**Google Stuff**__", inline=False)
+    em.add_field(name="/translate SRC", value="Translates SRC to english", inline=True)
+    em.add_field(name="/translateto LANG SRC", value="Translate SRC to LANG", inline=True)
+    em.add_field(name="/translatefromto LANG LANG2 SRC", value="Translates SRC in LANG to LANG2. /translatetofrom does the opposite", inline=True)
 
     em.add_field(name="\u200b", value="__**Other**__", inline=False)
     #em.add_field(name="/python CODE", value="```diff\n-Runs CODE as Python code, only works for specific users due to some security and execution concerns```", inline=True)
