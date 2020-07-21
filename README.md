@@ -76,4 +76,3 @@ If you didn't know already, your bot token should be in the token.txt file. If y
 ### If I want to turn this bot into a weeb (seperate nsfw module)
 - Reverse image lookup
 - 6-Digit (usally 4-6 digits) lookup
-- Hent-ai + DeepCreamPy implementation
