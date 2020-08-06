@@ -467,6 +467,7 @@ async def help(ctx):
 
     em.add_field(name="\u200b", value="__**Games**__", inline=False)
     em.add_field(name="/connect4 OPPONENT [width] [height]", value="Challenges OPPONENT to a game of connect 4 on a [width]x[height] board", inline=True)
+    em.add_field(name="/chess OPPONENT", value="Challenges OPPONENT to a game of chess", inline=True)
 
     em.add_field(name="\u200b", value="__**Images**__", inline=False)
     em.add_field(name="/fry [img | img_url] [gamma]", value="Deepfries an image attachemnt, image at the url given, or the iamge attachemnt before the command is executed", inline=True)
