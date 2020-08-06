@@ -73,6 +73,3 @@ If you didn't know already, your bot token should be in the token.txt file. If y
 ## **To Do**
 ### Games
 - More games that dont require a "secret" hand/board like poker, uno, battleship, etc. Games like minesweeper, solitare, but multiplayer
-### If I want to turn this bot into a weeb (seperate nsfw module)
-- Reverse image lookup
-- 6-Digit (usally 4-6 digits) lookup
