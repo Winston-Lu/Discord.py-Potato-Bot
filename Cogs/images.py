@@ -5,7 +5,6 @@ import requests
 from PIL import Image
 import PIL
 import cv2 as cv
-import requests
 from io import BytesIO
 import io
 import random

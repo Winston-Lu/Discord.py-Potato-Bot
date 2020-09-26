@@ -52,10 +52,10 @@ class Google(commands.Cog):
             return
         query = " ".join(query)
         language = language.lower()
-		if(language=="chinese_traditional"):
-			language = "chinese (traditional)"
-		elif(language=="chinese_simplified"):
-			language = "chinese (simplified)"
+        if (language == "chinese_traditional"):
+            language = "chinese (traditional)"
+        elif (language=="chinese_simplified"):
+            language = "chinese (simplified)"
         if not language in googletrans.LANGUAGES:
             if(language in googletrans.LANGUAGES.values()):
                 for key, val in googletrans.LANGUAGES.items():
@@ -98,10 +98,10 @@ class Google(commands.Cog):
             return
         query = " ".join(query)
         language = language.lower()
-		if(language=="chinese_traditional"):
-			language = "chinese (traditional)"
-		elif(language=="chinese_simplified"):
-			language = "chinese (simplified)"
+        if (language == "chinese_traditional"):
+            language = "chinese (traditional)"
+        elif (language=="chinese_simplified"):
+            language = "chinese (simplified)"
         if not language in googletrans.LANGUAGES:
             if(language in googletrans.LANGUAGES.values()):
                 for key, val in googletrans.LANGUAGES.items():
