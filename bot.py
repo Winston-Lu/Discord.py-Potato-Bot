@@ -43,7 +43,7 @@ async def on_ready():
 @bot.event
 async def on_message(message):
     import re
-    if(message.author == bot.user): #if message is from bot itself
+    if(message.author == bot.user or message.author.bot): #if message is from bot itself or from a bot
         return
     elif (re.search('^8=+D$',message.content)):
         length = len(message.content)-1
