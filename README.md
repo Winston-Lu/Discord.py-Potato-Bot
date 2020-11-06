@@ -44,7 +44,7 @@ For music integration, the code from my music.py file was built on top of [vbe02
 ### GNU/Linux
 ```sh
 sudo apt update
-sudo apt install ffmpeg libatlas-base-dev libjasper-dev libqtgui4 python3-pyqt5
+sudo apt install ffmpeg python-skimage libatlas-base-dev libjasper-dev libqtgui4 python3-pyqt5
 git clone https://github.com/Winston-Lu/Discord.py-Potato-Bot
 cd "Discord.py-Potato-Bot"
 pip3 install -r requirements.txt
