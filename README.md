@@ -55,6 +55,7 @@ If you are running this on a Raspberry Pi, run this:
 sudo apt install libhdf5-103
 ```
 Note If you are using a Raspberry Pi, the image module will only work for versions of Raspbian Buster or higher (Skikit-image will not install on any earlier versions). This means the Image module in COGS will not work with prior raspbian versions including Stretch and Jessie. Everything else should work fine on earlier raspbian versions.
+
 If you are still getting errors relating to missing packages, [follow this guide.](https://blog.piwheels.org/how-to-work-out-the-missing-dependencies-for-a-python-package/)
 
 ### Windows (Assumes Python 3 and pip3 is installed)
