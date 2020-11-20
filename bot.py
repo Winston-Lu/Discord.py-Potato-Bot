@@ -377,30 +377,33 @@ async def restore(ctx,value=""):
         em.description = f"Restoring {value} messages"
         em.color = 0xFF6622
         for msg in reversed(messageList):
-            if(field >= 23):
-                 field = 0
-                 await ctx.send(embed=em)
-                 em = discord.Embed()
-                 em.title = "Deleted messages"
-                 em.description = f"Continued:"
-                 em.color = 0xFF6622
-            if (len(msg[1])==0): #usually embeds have no msg content
-                msg[1] = "[No Msg Found, Likely an embed]"
-            if (len(msg)==3):
-                if(len(msg[1])>1020):
-                    em.add_field(name=f'{msg[0]}',value=f'{msg[1][:1020]} {msg[2]}',inline=False)
-                    em.add_field(name=f'{msg[0]} cont.',value=f'{msg[1][1020:]} {msg[2]}',inline=False)
-                    field+=1
+            try:
+                if(field >= 23):
+                     field = 0
+                     await ctx.send(embed=em)
+                     em = discord.Embed()
+                     em.title = "Deleted messages"
+                     em.description = f"Continued:"
+                     em.color = 0xFF6622
+                if (len(msg[1])==0): #usually embeds have no msg content
+                    msg[1] = "[No Msg Found, Likely an embed]"
+                if (len(msg)==3):
+                    if(len(msg[1])>1020):
+                        em.add_field(name=f'{msg[0]}',value=f'{msg[1][:1020]} {msg[2]}',inline=False)
+                        em.add_field(name=f'{msg[0]} cont.',value=f'{msg[1][1020:]} {msg[2]}',inline=False)
+                        field+=1
+                    else:
+                        em.add_field(name=f'{msg[0]}',value=f'{msg[1]} {msg[2]}',inline=False)
                 else:
-                    em.add_field(name=f'{msg[0]}',value=f'{msg[1]} {msg[2]}',inline=False)
-            else:
-                if(len(msg[1])>1020):
-                    em.add_field(name=f'{msg[0]}',value=f'{msg[1][:1020]}',inline=False)
-                    em.add_field(name=f'{msg[0]} cont.',value=f'{msg[1][1020:]}',inline=False)
-                    field+=1
-                else:
-                    em.add_field(name=f'{msg[0]}',value=f'{msg[1]}',inline=False)
-            field += 1
+                    if(len(msg[1])>1020):
+                        em.add_field(name=f'{msg[0]}',value=f'{msg[1][:1020]}',inline=False)
+                        em.add_field(name=f'{msg[0]} cont.',value=f'{msg[1][1020:]}',inline=False)
+                        field+=1
+                    else:
+                        em.add_field(name=f'{msg[0]}',value=f'{msg[1]}',inline=False)
+                field += 1
+            except Exception as e:
+                await ctx.send(f"Error: {e}")
         await ctx.send(embed=em)
     else:
         await ctx.send("Did not find any deleted messages since last restart")
