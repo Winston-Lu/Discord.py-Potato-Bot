@@ -1,19 +1,25 @@
 import asyncio
 import functools
 import itertools
+import math
 import random
-import math 
+
 import discord
 import youtube_dl
-from discord.ext import commands
 from async_timeout import timeout
+from discord.ext import commands
 
+# Silence useless bug reports messages
 youtube_dl.utils.bug_reports_message = lambda: ''
+
 
 class VoiceError(Exception):
     pass
+
+
 class YTDLError(Exception):
     pass
+
 
 class YTDLSource(discord.PCMVolumeTransformer):
     YTDL_OPTIONS = {
@@ -123,6 +129,7 @@ class YTDLSource(discord.PCMVolumeTransformer):
 
         return ', '.join(duration)
 
+
 class Song:
     __slots__ = ('source', 'requester')
 
@@ -141,6 +148,7 @@ class Song:
                  .set_thumbnail(url=self.source.thumbnail))
 
         return embed
+
 
 class SongQueue(asyncio.Queue):
     def __getitem__(self, item):
@@ -163,6 +171,7 @@ class SongQueue(asyncio.Queue):
 
     def remove(self, index: int):
         del self._queue[index]
+
 
 class VoiceState:
     def __init__(self, bot: commands.Bot, ctx: commands.Context):
@@ -244,11 +253,11 @@ class VoiceState:
             await self.voice.disconnect()
             self.voice = None
 
+
 class Music(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
         self.voice_states = {}
-        self.volume = 0.5
 
     def get_voice_state(self, ctx: commands.Context):
         state = self.voice_states.get(ctx.guild.id)
@@ -272,124 +281,62 @@ class Music(commands.Cog):
         ctx.voice_state = self.get_voice_state(ctx)
 
     async def cog_command_error(self, ctx: commands.Context, error: commands.CommandError):
-        if(str(error).find("'NoneType' object has no attribute 'is_playing'")!=-1 or str(error).find("'NoneType' object has no attribute 'requester'")!=-1): #pause when nothing plays or skip when there is nothing playing
-            em = discord.Embed()
-            em.title = 'Error: Music'
-            em.description = f"Nothing is playing"
-            em.color = 0xEE0000
-            await ctx.send(embed=em)
-        elif(str(error).find("'NoneType' object has no attribute 'is_paused'")!=-1): #resume when nothing is paused
-            em = discord.Embed()
-            em.title = 'Error: Music'
-            em.description = f"Nothing is paused"
-            em.color = 0xEE0000
-            await ctx.send(embed=em)
-        elif(str(error).find("'NoneType' object has no attribute 'channel'")!=-1): #when asked to play but no one is in channel
-            pass #error handled already
-        else:
-            em = discord.Embed()
-            em.title = f'Error: {__name__}'
-            em.description = f"{error}"
-            em.color = 0xEE0000
-            await ctx.send(embed=em)
+        await ctx.send('An error occurred: {}'.format(str(error)))
 
     @commands.command(name='join', invoke_without_subcommand=True)
     async def _join(self, ctx: commands.Context):
         """Joins a voice channel."""
+
         destination = ctx.author.voice.channel
         if ctx.voice_state.voice:
             await ctx.voice_state.voice.move_to(destination)
             return
 
         ctx.voice_state.voice = await destination.connect()
-        
-    @commands.command(name='leave', aliases=['disconnect','dc'])
+
+    @commands.command(name='summon')
+    @commands.has_permissions(manage_guild=True)
+    async def _summon(self, ctx: commands.Context, *, channel: discord.VoiceChannel = None):
+        """Summons the bot to a voice channel.
+        If no channel was specified, it joins your channel.
+        """
+
+        if not channel and not ctx.author.voice:
+            raise VoiceError('You are neither connected to a voice channel nor specified a channel to join.')
+
+        destination = channel or ctx.author.voice.channel
+        if ctx.voice_state.voice:
+            await ctx.voice_state.voice.move_to(destination)
+            return
+
+        ctx.voice_state.voice = await destination.connect()
+
+    @commands.command(name='leave', aliases=['disconnect'])
     @commands.has_permissions(manage_guild=True)
     async def _leave(self, ctx: commands.Context):
         """Clears the queue and leaves the voice channel."""
-        if not ctx.voice_state.voice: #if not in voice
-            em = discord.Embed()
-            em.title = 'Error'
-            em.description = f"Not connected to any voice channel"
-            em.color = 0xEE0000
-            await ctx.send(embed=em)
-            return
-        await ctx.voice_state.stop() #otherwise in voice chat, leave
+
+        if not ctx.voice_state.voice:
+            return await ctx.send('Not connected to any voice channel.')
+
+        await ctx.voice_state.stop()
         del self.voice_states[ctx.guild.id]
-    
+
     @commands.command(name='volume')
-    async def _volume(self, ctx: commands.Context, *, volume: int=-1):
+    async def _volume(self, ctx: commands.Context, *, volume: int):
+        """Sets the volume of the player."""
+
         if not ctx.voice_state.is_playing:
-            em = discord.Embed()
-            em.title = 'Error'
-            em.description = f"Nothing is playing"
-            em.color = 0xEE0000
-            await ctx.send(embed=em)
-            return
+            return await ctx.send('Nothing being played at the moment.')
 
-        if (volume == -1):
-            em = discord.Embed()
-            em.title = 'Error'
-            em.description = f"Please specify a volume"
-            em.color = 0xEE0000
-            await ctx.send(embed=em)
-            return
+        if 0 > volume > 100:
+            return await ctx.send('Volume must be between 0 and 100')
 
-        if (volume < 0 or volume > 200):
-            em = discord.Embed()
-            em.title = 'Error'
-            em.description = f"Volume must be between 0% - 200%"
-            em.color = 0xEE0000
-            await ctx.send(embed=em)
-            return
+        ctx.voice_state.volume = volume / 100
+        await ctx.send('Volume of the player set to {}%'.format(volume))
 
-        self.volume = volume / 100
-        ctx.voice_state.current.source.volume = volume / 100
-        em = discord.Embed()
-        em.title = 'Info'
-        em.description = f"Volume of the player set to {volume}"
-        em.color = 0xEE9900
-        await ctx.send(embed=em)
-        return
-
-    @commands.command(name='mute')
-    async def _mute(self, ctx: commands.Context):
-        if not ctx.voice_state.is_playing:
-            em = discord.Embed()
-            em.title = 'Error'
-            em.description = f"Nothing is playing"
-            em.color = 0xEE0000
-            await ctx.send(embed=em)
-            return
-
-        ctx.voice_state.current.source.volume = 0
-        em = discord.Embed()
-        em.title = 'Info'
-        em.description = f"Muted"
-        em.color = 0xEE9900
-        await ctx.send(embed=em)
-        return
-
-    @commands.command(name='unmute')
-    async def _unmute(self, ctx: commands.Context):
-        if not ctx.voice_state.is_playing:
-            em = discord.Embed()
-            em.title = 'Error'
-            em.description = f"Nothing is playing"
-            em.color = 0xEE0000
-            await ctx.send(embed=em)
-            return
-
-        ctx.voice_state.current.source.volume = self.volume
-        em = discord.Embed()
-        em.title = 'Info'
-        em.description = f"Unmuted"
-        em.color = 0xEE9900
-        await ctx.send(embed=em)
-        return
-
-    @commands.command(name='info', aliases=['current', 'playing'])
-    async def _info(self, ctx: commands.Context):
+    @commands.command(name='now', aliases=['current', 'playing'])
+    async def _now(self, ctx: commands.Context):
         """Displays the currently playing song."""
 
         await ctx.send(embed=ctx.voice_state.current.create_embed())
@@ -399,48 +346,38 @@ class Music(commands.Cog):
     async def _pause(self, ctx: commands.Context):
         """Pauses the currently playing song."""
 
-        if ctx.voice_state.voice.is_playing():
+        if not ctx.voice_state.is_playing and ctx.voice_state.voice.is_playing():
             ctx.voice_state.voice.pause()
+            await ctx.message.add_reaction('⏯')
 
     @commands.command(name='resume')
     @commands.has_permissions(manage_guild=True)
     async def _resume(self, ctx: commands.Context):
         """Resumes a currently paused song."""
 
-        if ctx.voice_state.voice.is_paused():
+        if not ctx.voice_state.is_playing and ctx.voice_state.voice.is_paused():
             ctx.voice_state.voice.resume()
+            await ctx.message.add_reaction('⏯')
 
     @commands.command(name='stop')
     @commands.has_permissions(manage_guild=True)
     async def _stop(self, ctx: commands.Context):
         """Stops playing song and clears the queue."""
+
         ctx.voice_state.songs.clear()
 
-        if ctx.voice_state.is_playing:
-            ctx.voice_state.voice.stop() #stop if playing
-            if not ctx.voice_state.voice: #if not in voice
-                em = discord.Embed()
-                em.title = 'Error'
-                em.description = f"No one in voice channel"
-                em.color = 0xEE0000
-                await ctx.send(embed=em)
-                return
-            await ctx.voice_state.stop() #otherwise in voice chat, leave
-            del self.voice_states[ctx.guild.id]
-    
+        if not ctx.voice_state.is_playing:
+            ctx.voice_state.voice.stop()
+            await ctx.message.add_reaction('⏹')
+
     @commands.command(name='skip')
     async def _skip(self, ctx: commands.Context):
         """Vote to skip a song. The requester can automatically skip.
         3 skip votes are needed for the song to be skipped.
         """
 
-        if ctx.voice_state.is_playing:
-            em = discord.Embed()
-            em.title = 'Error'
-            em.description = f'Not playing any music'
-            em.color = 0xEE9900
-            await ctx.send(embed=em)
-            return
+        if not ctx.voice_state.is_playing:
+            return await ctx.send('Not playing any music right now...')
 
         voter = ctx.message.author
         if voter == ctx.voice_state.current.requester:
@@ -455,12 +392,7 @@ class Music(commands.Cog):
                 await ctx.message.add_reaction('⏭')
                 ctx.voice_state.skip()
             else:
-                em = discord.Embed()
-                em.title = 'Vote for skip'
-                em.description = f'Skip vote added, currently at **{total_votes}/3**'
-                em.color = 0xEE9900
-                await ctx.send(embed=em)
-                return
+                await ctx.send('Skip vote added, currently at **{}/3**'.format(total_votes))
 
         else:
             await ctx.send('You have already voted to skip this song.')
@@ -472,12 +404,7 @@ class Music(commands.Cog):
         """
 
         if len(ctx.voice_state.songs) == 0:
-            em = discord.Embed()
-            em.title = 'Info:'
-            em.description = f"Queue is empty"
-            em.color = 0xEE8800
-            await ctx.send(embed=em)
-            return
+            return await ctx.send('Empty queue.')
 
         items_per_page = 10
         pages = math.ceil(len(ctx.voice_state.songs) / items_per_page)
@@ -498,40 +425,20 @@ class Music(commands.Cog):
         """Shuffles the queue."""
 
         if len(ctx.voice_state.songs) == 0:
-            em = discord.Embed()
-            em.title = 'Info:'
-            em.description = f"Queue is empty, nothing to shuffle"
-            em.color = 0xEE8800
-            await ctx.send(embed=em)
-            return
+            return await ctx.send('Empty queue.')
 
         ctx.voice_state.songs.shuffle()
-        em = discord.Embed()
-        em.title = 'Success'
-        em.description = f"Shuffled"
-        em.color = 0x00EE00
-        await ctx.send(embed=em)
-        return
+        await ctx.message.add_reaction('✅')
 
     @commands.command(name='remove')
-    async def _remove(self, ctx: commands.Context, index: int=-1):
+    async def _remove(self, ctx: commands.Context, index: int):
         """Removes a song from the queue at a given index."""
-        if(index<=0):
-            em = discord.Embed()
-            em.title = 'Error'
-            em.description = f"Index not specified or is invalid. Add a valid number after /remove"
-            em.color = 0xEE0000
-            await ctx.send(embed=em)
-            return
+
         if len(ctx.voice_state.songs) == 0:
-            em = discord.Embed()
-            em.title = 'Error'
-            em.description = f"Nothing to remove"
-            em.color = 0xEE0000
-            await ctx.send(embed=em)
-            return
+            return await ctx.send('Empty queue.')
 
         ctx.voice_state.songs.remove(index - 1)
+        await ctx.message.add_reaction('✅')
 
     @commands.command(name='loop')
     async def _loop(self, ctx: commands.Context):
@@ -540,32 +447,21 @@ class Music(commands.Cog):
         """
 
         if not ctx.voice_state.is_playing:
-            em = discord.Embed()
-            em.title = 'Error'
-            em.description = f"Nothing is being played"
-            em.color = 0xEE0000
-            await ctx.send(embed=em)
-            return
+            return await ctx.send('Nothing being played at the moment.')
 
         # Inverse boolean value to loop and unloop.
         ctx.voice_state.loop = not ctx.voice_state.loop
+        await ctx.message.add_reaction('✅')
 
     @commands.command(name='play')
-    async def _play(self, ctx: commands.Context, *, search: str=""):
+    async def _play(self, ctx: commands.Context, *, search: str):
         """Plays a song.
         If there are songs in the queue, this will be queued until the
         other songs finished playing.
         This command automatically searches from various sites if no URL is provided.
         A list of these sites can be found here: https://rg3.github.io/youtube-dl/supportedsites.html
         """
-        if(search==""):
-            em = discord.Embed()
-            em.title = 'Error'
-            em.description = f"Add a valid URL or search string"
-            em.color = 0xEE0000
-            await ctx.send(embed=em)
-            return
-        
+
         if not ctx.voice_state.voice:
             await ctx.invoke(self._join)
 
@@ -573,37 +469,19 @@ class Music(commands.Cog):
             try:
                 source = await YTDLSource.create_source(ctx, search, loop=self.bot.loop)
             except YTDLError as e:
-                em = discord.Embed()
-                em.title = 'Error'
-                em.description = f"An error occurred while processing this request: {e}"
-                em.color = 0xEE0000
-                await ctx.send(embed=em)
-                return
+                await ctx.send('An error occurred while processing this request: {}'.format(str(e)))
             else:
                 song = Song(source)
+
                 await ctx.voice_state.songs.put(song)
-                em = discord.Embed()
-                em.title = 'Queued song'
-                em.description = f"{source} has been queued at position {len(ctx.voice_state.songs)}"
-                em.color = 0x00EE00
-                await ctx.send(embed=em)
-                return
+                await ctx.send('Enqueued {}'.format(str(source)))
 
     @_join.before_invoke
     @_play.before_invoke
     async def ensure_voice_state(self, ctx: commands.Context):
         if not ctx.author.voice or not ctx.author.voice.channel:
-            em = discord.Embed()
-            em.title = 'Error'
-            em.description = f"You are not in any voice channel"
-            em.color = 0xEE0000
-            await ctx.send(embed=em)
-            return
+            raise commands.CommandError('You are not connected to any voice channel.')
+
         if ctx.voice_client:
             if ctx.voice_client.channel != ctx.author.voice.channel:
-                em = discord.Embed()
-                em.title = 'Error'
-                em.description = f"Bot is already in a voice channel"
-                em.color = 0xEE0000
-                await ctx.send(embed=em)
-                return
+                raise commands.CommandError('Bot is already in a voice channel.')
