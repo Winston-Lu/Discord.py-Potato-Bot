@@ -46,11 +46,15 @@ async def on_message(message):
     if(message.author == bot.user or message.author.bot): #if message is from bot itself
         return
     elif (re.search('8=+D',message.content)):
-        length = len(message.content)-1
-        if(length>1985):
+        p = re.compile("8=+D")
+        maxLen = 0
+        for m in p.finditer(message.content):
+            if(len(m.group()) > maxLen):
+                maxLen = len(m.group())
+        if(maxLen>1985):
             await message.channel.send("You win this time")
             return(0)
-        await message.channel.send('Mine is longer\n8'+ '='*length + 'D')
+        await message.channel.send('Mine is longer\n8'+ '='*(length-1) + 'D')
     elif (message.content.lower().find("loli")!=-1):
         await message.channel.send('WEE WOO WEE WOO NO LEWDING LOLIS\nhttps://cdn.discordapp.com/attachments/569020987710898217/665355402199826463/53muboc5hv941.jpg')
     elif (message.content!="" and message.content[0]=='/'):
