@@ -45,7 +45,7 @@ async def on_message(message):
     import re
     if(message.author == bot.user or message.author.bot): #if message is from bot itself
         return
-    elif (re.search('^8=+D$',message.content)):
+    elif (re.search('8=+D',message.content)):
         length = len(message.content)-1
         if(length>1985):
             await message.channel.send("You win this time")
