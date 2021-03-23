@@ -32,6 +32,7 @@ A bot for Discord written for Python 3.7.3+ as a general purpose utility bot. Th
 
 ### Games
 * Connect 4 - Self explanitory, can also change size of board
+* Chess - Self explanitry. Works by inputting 2 sets of coordinates. Still a work in progress
 
 ### General
 * Ping - Responds with latency to Discord servers
