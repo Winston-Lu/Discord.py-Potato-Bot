@@ -333,15 +333,34 @@ class Games(commands.Cog):
                  ['','','','','','','',''],
                  ['','','','','','','',''],
                  [pawnblack,pawnblack,pawnblack,pawnblack,pawnblack,pawnblack,pawnblack,pawnblack],
-                 [rookblack,knightblack,bishopblack,queenblack,kingblack,bishopblack,knightblack,rookblack]
+                 [rookblack,knightblack,bishopblack,queenblack,kingblack,bishopblack,knightblack,rookblack],
         ]
 
+        # Game variables
         player1 = ctx.message.mentions[0].name
         player2 = ctx.message.author.name
+        currentPlayer = player1
+        otherPlayer = player2
+        player1badInput = 0
+        player2badInput = 0
+        currentPlayerId=1
+        prevMove = ""
+        turn = 0
+        #Castling check
+        castlingDict = {
+            "isWhiteKingMove": False,
+            "isWhiteRookMoveL": False,
+            "isWhiteRookMoveR": False,
+            "isBlackKingMove": False,
+            "isBlackRookMoveL": False,
+            "isBlackRookMoveR": False,
+        }
+        
+        #Bunch of helper functions
         def getDisplay():
             toDisplay = ""
             for y in range(0,8):
-                toDisplay+=(f'{8-y} |')
+                toDisplay+=(f'{y+1} |')
                 for x in range(8):
                     if(board[y][x]==''):
                         toDisplay+=space+'|'
@@ -350,307 +369,331 @@ class Games(commands.Cog):
                 toDisplay+='\n'
             toDisplay+="  A | B | C | D | E | F | G | H |"
             return(toDisplay)
+
+        def parseMove(msg: str):
+            msg = msg.lower()
+            try:
+                if (msg[0].isalpha() and msg[1].isdigit()):
+                    x = ord(msg[0])-97
+                    y = int(msg[1])-1
+                    if(x < 8 and y < 8 and x >= 0 and y >= 0):
+                        return ((y,x))
+                else:
+                    raise ValueError
+            except:
+                pass
+            return ((None,None))
+
+        def validateMove(src: tuple, dst: tuple, castlingDict: dict):
+            piece = board[src[0]][src[1]]
+            dx = dst[1]-src[1]
+            dy = dst[0]-src[0]
+            #check if the shape/direction of travel is valid
+            if(piece == pawnwhite):
+                if(dx==0):
+                    if(dy==1): #can move down 1 if spot above is empty
+                        return (board[dst[0]][dst[1]]=="" and not inCheck(src,dst))
+                    elif(dy==2): #double move if space between is empty and destination is empty
+                        return(emptySpaceBetween(src,dst) and board[dst[0]][dst[1]]=="" and not inCheck(src,dst))
+                    return False
+                #if moving diagonally
+                elif(abs(dx)==1 and dy==1):
+                    #en passant at right spot, to an empty space, and passing an opponent pawn
+                    if(dst[0]==5 and board[dst[0]][dst[1]]=="" and board[dst[0]-1][dst[1]]==pawnblack):
+                        #check if pervious move before was a double move
+                        prevMoveCoordsSrc = parseMove(prevMove.split(" ")[0])
+                        prevMoveCoordsDst = parseMove(prevMove.split(" ")[1])
+                        #if x move is 0, y move is 2, and prevMoveCoordsDst x is dst x 
+                        if(abs(prevMoveCoordsSrc[0]-prevMoveCoordsDst[0])==2 and prevMoveCoordsSrc[1]-prevMoveCoordsDst[1]==0 and prevMoveCoordsDst[1] == dst[1] and not inCheck(src,dst)):
+                            board[prevMoveCoordsDst[0]][prevMoveCoordsDst[1]] = ""
+                            return True
+                        return False
+                    return (isOpponentPiece(src,dst) and not inCheck(src,dst))
+                return False
+
+            elif(piece == pawnblack):
+                if(dx==0):
+                    if(dy==-1): #can move up 1 if spot above is empty
+                        return (board[dst[0]][dst[1]]=="" and not inCheck(src,dst))
+                    elif(dy==-2): #double move if space between is empty and destination is empty
+                        return(emptySpaceBetween(src,dst) and board[dst[0]][dst[1]]=="" and not inCheck(src,dst))
+                    return False
+                #if moving diagonally
+                elif(abs(dx)==1 and dy==-1):
+                    #en passant at right spot, to an empty space, and passing an opponent pawn
+                    if(dst[0]==2 and board[dst[0]][dst[1]]=="" and board[dst[0]+1][dst[1]]==pawnwhite):
+                        #check if pervious move before was a double move
+                        prevMoveCoordsSrc = parseMove(prevMove.split(" ")[0])
+                        prevMoveCoordsDst = parseMove(prevMove.split(" ")[1])
+                        #if x move is 0, y move is 2, and prevMoveCoordsDst x is dst x 
+                        if (abs(prevMoveCoordsSrc[0]-prevMoveCoordsDst[0])==2 and prevMoveCoordsSrc[1]-prevMoveCoordsDst[1]==0 and prevMoveCoordsDst[1] == dst[1] and not inCheck(src,dst)):
+                            board[prevMoveCoordsDst[0]][prevMoveCoordsDst[1]] = ""
+                            return True
+                        return False
+                    return(isOpponentPiece(src,dst) and not inCheck(src,dst))
+                return False
+
+            elif(piece == rookwhite or piece == rookblack):
+                if((dy==0 and dx!=0) or (dy!=0 and dx==0)):
+                    if(emptySpaceBetween(src,dst) and (board[dst[0]][dst[1]]=="" or isOpponentPiece(src,dst)) and not inCheck(src,dst)):
+                        if(src[0]==0 and src[1]==0):
+                            castlingDict["isWhiteRookMoveL"] = True
+                        elif(src[0]==0 and src[1]==7):
+                            castlingDict["isWhiteRookMoveR"] = True
+                        elif(src[0]==7 and src[1]==0):
+                            castlingDict["isBlackRookMoveL"] = True
+                        elif(src[0]==7 and src[1]==7):
+                            castlingDict["isBlackRookMoveR"] = True
+                        return True
+                    return False
+
+            elif(piece == knightblack or piece == knightwhite):
+                return (
+                        (   #L-moves
+                            (abs(dy)==1 and abs(dx)==2) 
+                            or 
+                            (abs(dy)==2 and abs(dx)==1)
+                        ) 
+                        and #destination is a capture or empty
+                        (   board[dst[0]][dst[1]]=="" or isOpponentPiece(src,dst)  )
+                        and
+                            not inCheck(src,dst)
+                       )
+
+            elif(piece == bishopwhite or piece == bishopblack):
+                if(abs(dy)==abs(dx)):
+                    return(emptySpaceBetween(src,dst) and (board[dst[0]][dst[1]]=="" or isOpponentPiece(src,dst)) and not inCheck(src,dst))
+                return False
+
+            elif(piece == queenblack or piece == queenwhite):
+                if( (dy==0 and dx!=0) or #horizontal
+                    (dy!=0 and dx==0) or #vertucak
+                    (abs(dy)==abs(dx))): #diagonal
+                    return(emptySpaceBetween(src,dst) and (board[dst[0]][dst[1]]=="" or isOpponentPiece(src,dst)) and not inCheck(src,dst))
+                return False
+
+            elif(piece == kingblack or piece == kingwhite):
+                if(abs(dx)<=1 and abs(dy)<=1 and not inCheck(src,dst)):
+                    if(src[0]==7 and src[1] == 4):
+                        castlingDict["isBlackKingMove"] = True
+                    elif(src[0]==0 and src[1] == 4):
+                        castlingDict["isWhiteKingMove"] = True
+                    return (board[dst[0]][dst[1]]=="" or isOpponentPiece(src,dst) and not inCheck(src,dst))
+                elif(abs(dx)>1 and dy==0 and not inCheck(src,dst)):
+                    #possible castling
+                    #move the rook as well since we are only moving the king
+                    if(src[0]==0 and src[1]==4 and dx==-3 and not castlingDict["isWhiteRookMoveL"] and not castlingDict["isWhiteKingMove"] and board[0][0]==rookwhite):
+                        board[0][0] = ""
+                        board[0][2] = rookwhite
+                        return True
+                    elif (src[0]==0 and src[1]==4 and dx==2 and not castlingDict["isWhiteRookMoveR"] and not castlingDict["isWhiteKingMove"] and board[0][7]==rookwhite):
+                        board[0][7] = ""
+                        board[0][5] = rookwhite
+                        return True
+                    elif(src[0]==7 and src[1]==4 and dx==-3 and not castlingDict["isBlackRookMoveL"] and not castlingDict["isBlackKingMove"] and board[7][0]==rookblack):
+                        board[7][0] = ""
+                        board[7][2] = rookblack
+                        return True
+                    elif(src[0]==7 and src[1]==4 and dx==2 and not castlingDict["isBlackRookMoveR"] and not castlingDict["isBlackKingMove"] and board[7][7]==rookblack):
+                        board[7][7] = ""
+                        board[7][5] = rookblack
+                        return True
+                    return False
+
+        def emptySpaceBetween(src: tuple, dst: tuple):
+            dx = dst[1]-src[1]
+            dy = dst[0]-src[0]
+            dxDir = 1 if (dx > 0) else -1
+            dyDir = 1 if (dy > 0) else -1
+            if(dy==0 and dx != 0):
+                #move from source x to destination x, ignoring itself (hence the src[1] +- 1)
+                for x in range(src[1]+dxDir,dst[1],dxDir):
+                    if(board[src[0]][x] != ""): 
+                        return False #if piece between src and dst, return false
+                return True
+            elif(dx==0 and dy != 0):
+                #move from source x to destination x, ignoring itself (hence the src[1] +- 1)
+                for y in range(src[0]+dyDir,dst[0],dyDir):
+                    if(board[y][src[1]] != ""): 
+                        return False #if piece between src and dst, return false
+                return True
+            elif(abs(dy)==abs(dx)):
+                for i in range (1,abs(dx)):
+                    if(board[src[0]+i*dyDir][src[1]+i*dxDir] != ""):
+                        return False
+                return True
+            return False
+
+        def isOpponentPiece(src: tuple, dst: tuple):
+            if(board[src[0]][src[1]] in whitepieces):
+                return (board[dst[0]][dst[1]] in blackpieces)
+            elif (board[src[0]][src[1]] in blackpieces):
+                return (board[dst[0]][dst[1]] in whitepieces)
+            return False
+
+        def movePiece(msg: str):
+            src = parseMove(msg.split(" ")[0])
+            dst = parseMove(msg.split(" ")[1])
+            board[dst[0]][dst[1]] = board[src[0]][src[1]]
+            board[src[0]][src[1]] = ""
+
+        def checkPlayerMove(msg: str, castlingDict: dict):
+            coords = msg.split(" ")
+            if(len(coords) != 2):
+                return "Please give 2 coordinates separated by spaces. Ex: a2 a4"
+            src = parseMove(coords[0])
+            dst = parseMove(coords[1])
+            if(src[0]==None):
+                return "The first coordinate entered is in an invalid format (a-h)(1-8). Ex: A5 or a5"
+            if(dst[0]==None):
+                return "The second coordinate entered is in an invalid format (a-h)(1-8). Ex: A5 or a5"
+            if((currentPlayerId == 2 and board[src[0]][src[1]] in whitepieces) or (currentPlayerId == 1 and board[src[0]][src[1]] in blackpieces)):
+                return "You can not move your opponent's pieces"
+            if(validateMove(src,dst,castlingDict)):
+                return f"Turn {turn}: {currentPlayer} moved from {coords[0].upper()} to {coords[1].upper()}\n{otherPlayer}, Type two coordinates to move"
+            if(board[src[0]][src[1]] == ""):
+                return ("You did not select a valid piece")
+            return "That piece can not move there"
+       
+        def inCheck(src: tuple, dst: tuple, player=None):
+            if(player==None): #check player dependinbg on src piece
+                pass
+            elif (player == player1): #if player is defined, check if white is in check
+                pass
+            elif (player == player2): #if player is defined, check if black is in check
+                pass
+            return False #placeholder
         ### Send Message
         boardMessage = None #the message so that it can be deleted and altered when a move is made
         # Create Message
         em = discord.Embed()
-        if(player1==player2):
-            em.title = f"{player2} challenged themselves to a game of chess\n(wow you're lonely)"
-        else:
-            em.title = f'{player2} challenged {player1} to a game of chess'
+        em.title = f'{player2} challenged {player1} to a game of chess'
         em.description = f"{getDisplay()}"
         em.color = 0x444444
-        em.add_field(name=f"{player1}", value=f"Type two coordinates (piece -> destination), or type 'decline' to refuse\nYou are the the bottom player", inline=False)
+        em.add_field(name=f"{player1}", value=f"Type two coordinates (piece -> destination), or type 'decline' to refuse\nYou are playing white", inline=False)
         em.add_field(name="Example", value="a2 a3", inline=False)
         await ctx.send(embed=em)
-        # Add message in the to-delete list
+        # Add message to edit later
         async for x in ctx.channel.history(limit = 1):
             boardMessage = x
-        # Game variables
-        badInput = 0
-        currentPlayer = player1
-        otherPlayer = player2
-        currentPlayerId=1
-        
-        #Castling check
-        iswhitekingmove = False
-        iswhiterookmove1 = False
-        iswhiterookmove2 = False
-        isblackkingmove = False
-        isblackrookmove1 = False
-        isblackrookmove2 = False
 
-
-        # Validate move function (used later)
-        def validMove(playerTurn,msg):
-            move = msg.lower().split(" ")
-            if(len(move)!=2): #should be 2 coordinates
-                return "Did not find exactly 2 coordinates. Make sure they are seperated by a space. Ex: 'a2 a3'"
-            if(len(move[0])!=2 and len(move[1])!=2): #should be 2 characters long
-                return "Coordinates were not 2 characters long, did you mistype the coordinate?"
+        for x in range(4):
             try:
-                coordOfPiece = (8-int(move[0][1]),ord(move[0][0])-97)
-                coordOfDestination = (8-int(move[1][1]),ord(move[1][0])-97)
-                pieceToMove = board[coordOfPiece[0]][coordOfPiece[1]]
-                pieceAtDestination = board[coordOfDestination[0]][coordOfDestination[1]]
-                dx = coordOfDestination[1] - coordOfPiece[1]
-                dy = coordOfPiece[0] - coordOfDestination[0] ##switch around for a more cartesion coordinate-like system instead of 0 being at the top
-                errorMsg = ""
-                if(dx==0 and dy==0): #if src and dst are the same
-                    return "you must move your piece"
-                #a switch-case would have been a lot nicer
-                if(playerTurn==player1):
-                    if(pieceToMove == pawnwhite):
-                        if(dy==1): ##if moving 1 up
-                            ##------ standard move up
-                            #    if horizontal movement is 0    and     space to move is empty
-                            if(dx==0 and pieceAtDestination==''): #forward and no piece in front
-                                return 'g'
-                            ##------ pawn killing a piece
-                            #       if horizontal movement is 1         and     spot to move is a black piece
-                            elif(abs(dx)==1 and pieceAtDestination in blackpieces):
-                                return 'g'
-                            else:
-                                return "not a valid move for pawn"
-                        ##------ Double jump
-                        #   if moving 2 spaces up and moving 0 spaces to the side and on start line and nothing between pawn and destination
-                        elif(dy==2 and dx==0 and coordOfPiece[0] == 6 and board[5][coordOfPiece[1]]==''): 
-                            return 'g'
-                        else:
-                            return "not a valid move for pawn"
-                    elif(pieceToMove == knightwhite):
-                        if not (pieceAtDestination in whitepieces): #only move restriction is if spot is not own piece
-                            if ((abs(dy)==2 and abs(dx)==1) or (abs(dy)==1 and abs(dx)==2)):
-                                return 'g'
-                            else:
-                                return 'invalid move for knight'
-                        else:
-                            return "invalid move for knight"
-                    elif(pieceToMove == bishopwhite):
-                        if ((not (pieceAtDestination in whitepieces)) and abs(dx)==abs(dy)): #dont move if spot is their own piece and is moving diagonally
-                            checkdx = abs(dx)/dx # +-1
-                            checkdy = abs(dy)/dy # +-1
-                            checkx = coordOfPiece[1]
-                            checky = coordOfPiece[0]
-                            tilesToCheck = abs(dx) #abs(dy) works too
-                            for _ in range(tilesToCheck-1):
-                                if(board[checky+checkdy][checkx+checkdx]!=''): #if piece in the way of bishops move
-                                    return "piece in the way of bishop's move"
-                                #increment diagonal check coordinates, branchless would have been a cleaner implentation
-                                if(checkdx<0):
-                                    checkdx-=1
-                                else:
-                                    checkdx+=1
-                                if(checkdy<0):
-                                    checkdy-=1
-                                else:
-                                    checkdy+=1
-                            return 'g' #if passed check, move should be good
-                        else:
-                            return "not a valid move for bishop"
-                    elif(pieceToMove == rookwhite):
-                        if ((not (pieceAtDestination in whitepieces)) and (dx==0 or dy==0)): #dont move if spot is their own piece and is moving horizontally/vertically
-                            checkx = coordOfPiece[1]
-                            checky = coordOfPiece[0]
-                            tilesToCheck = abs(dx) #abs(dy) works too
-                            if(dx!=0): #moving horizontally
-                                checkdx=abs(dx)/dx
-                                for _ in (tilesToCheck-1):
-                                    if(board[checky][checkx+checkdx]!=''): #if piece in the way of bishops move
-                                        return "piece in the way of rook's move"
-                                    #increment check coordinates, branchless would have been a cleaner implentation
-                                    if(checkdx<0):
-                                        checkdx-=1
-                                    else:
-                                        checkdx+=1
-                            else: #moving vertically
-                                checkdy=abs(dy)/dy
-                                for _ in (tilesToCheck-1):
-                                    if(board[checky+checkdy][checkx]!=''): #if piece in the way of bishops move
-                                        return "piece in the way of rook's move"
-                                    #increment check coordinates, branchless would have been a cleaner implentation
-                                    if(checkdy<0):
-                                        checkdy-=1
-                                    else:
-                                        checkdy+=1
-                            return 'g'
-                        else:
-                            return "not a valid move for rook"
-                    elif(pieceToMove == queenwhite):
-                        if ((not (pieceAtDestination in whitepieces)) and (abs(dx)==abs(dy) or (abs(dx)==0 or abs(dy)==0))): #dont move if spot is their own piece and is moving diagonally
-                            checkx = coordOfPiece[1]
-                            checky = coordOfPiece[0]
-                            tilesToCheck = abs(dx) #abs(dy) works too
-                            #if diagonal move
-                            if(abs(dx)==abs(dy)):
-                                checkdx = abs(dx)/dx # +-1
-                                checkdy = abs(dy)/dy # +-1
-                                for _ in range(tilesToCheck-1):
-                                    if(board[checky+checkdy][checkx+checkdx]!=''): #if piece in the way of queens move
-                                        return "piece in the way of queen's move"
-                                    #increment diagonal check coordinates, branchless would have been a cleaner implentation
-                                    if(checkdx<0):
-                                        checkdx-=1
-                                    else:
-                                        checkdx+=1
-                                    if(checkdy<0):
-                                        checkdy-=1
-                                    else:
-                                        checkdy+=1
-                                return 'g' #if passed check, move should be good
-                            #if horizontal move
-                            elif(dx==0 or dy==0):
-                                if(dx!=0): #moving horizontally
-                                    checkdx=abs(dx)/dx
-                                    for _ in (tilesToCheck-1):
-                                        if(board[checky][checkx+checkdx]!=''): #if piece in the way of queens move
-                                            return "piece in the way of queen's move"
-                                        #increment check coordinates, branchless would have been a cleaner implentation
-                                        if(checkdx<0):
-                                            checkdx-=1
-                                        else:
-                                            checkdx+=1
-                                else: #moving vertically
-                                    checkdy=abs(dy)/dy
-                                    for _ in (tilesToCheck-1):
-                                        if(board[checky+checkdy][checkx]!=''): #if piece in the way of bishops move
-                                            return "piece in the way of queen's move"
-                                        #increment check coordinates, branchless would have been a cleaner implentation
-                                        if(checkdy<0):
-                                            checkdy-=1
-                                        else:
-                                            checkdy+=1
-                                return 'g'
-                            else:
-                                return "not a valid move for queen - not sure what went wrong"
-                        else:
-                            return "not a valid move for queen"
-                    elif(pieceToMove == kingwhite):
-                        if not pieceAtDestination in whitepieces:
-                            if (abs(dx)<=1 and abs(dy)<=1): #if spot is 1 tile away
-                                if not (isInCheck(player1,coordOfDestionation)):
-                                    return 'g'
-                                else:
-                                    return 'king can not move into check'
-                            #castle to the left
-                            elif ( (not iswhitekingmove) and (not iswhiterookmove1) and coordOfDestination[0] == 7 and coordOfDestination[1] == 2):
-                                if (board[7][1]=='' and board[7][2]=='' and board[7][3]==''):
-                                    return 'g'
-                                else:
-                                    return 'can not castle with pieces in the way'
-                            #castle to the right
-                            elif ( (not iswhitekingmove) and (not iswhiterookmove2) and coordOfDestination[0] == 7 and coordOfDestination[1] == 6):
-                                if (board[7][5]=='' and board[7][6]==''):
-                                    return 'g'
-                                else:
-                                    return 'can not castle with pieces in the way'
-                        else:
-                            return "king can not kill their own piece"
-                        ## if king hasnt moved and king is moving to (C1 and rook has not moved) 
-                        ##      if no pieces in B1 C1 D1
-                        ##          return 'g'
-                        ##      else:
-                        ##          return "Can not castle with pieces in the way"
-                        ## elif king hasnt moved and king is moving to (G1 and rook2 has not moved)
-                        ##      if no pieces in F1 G1
-                        ##          return 'g'
-                        ##      else:
-                        ##          return "Can not castle with pieces in the way"
-                    else:
-                        return(f"Invalid move: {errorMsg}") #if chose empty space or opponent's piece
-                elif(playerTurn==player2):
-                    if(pieceToMove == pawnblack):
-                        ## pawn double move
-                        pass
-                    elif(pieceToMove == knightblack):
-                        pass
-                    elif(pieceToMove == bishopblack):
-                        pass
-                    elif(pieceToMove == rookblack):
-                        pass
-                    elif(pieceToMove == queenblack):
-                        pass
-                    elif(pieceToMove == kingblack):
-                        pass
-                    else:
-                        return(f"Invalid move: {errorMsg}") #if chose empty space or opponent's piece
-                    return 'g' #for testing, assume all black player moves are okay
-            except IndexError:
-                return "Coordinates does not seem to exist on the board"
-
-
-        def isInCheck(player,dest): #checks if that spot would be in check
-            if(player==player1): #if white king in check
-                pass
-            elif(player==player2): #if black king in check
-                pass
-
-
-        ## Get Opponent's first move, if opponent accepts match
-        while True:
-            try:
+                em = discord.Embed()
+                em.title = f'{player2} challenged {player1} to a game of chess'
                 msg = await self.bot.wait_for('message',check=lambda message: message.author.name == player1, timeout=30)
                 if(msg.content=='decline'):
-                    em = discord.Embed()
-                    if(player1==player2):
-                        em.title = f"{player2} challenged themselves to a game of chess (wow you're lonely)"
-                    else:
-                        em.title = f'{player2} challenged {player1} to a game of chess 4'
                     em.description = f"{getDisplay()}"
-                    em.color = 0x444444
                     em.add_field(name=f"{player1}", value="Challenge refused", inline=False)
                     await boardMessage.edit(embed=em)
                     return
-                # Parse Message
-                checkMove = validMove(currentPlayer,msg.content)
-                if(len(checkMove)>1): #not 'g' 
-                    raise ValueError
-                #cleanup and start main game loop
+                gameMsg = checkPlayerMove(msg.content,castlingDict)
+                if(gameMsg[0:4]!="Turn"):
+                    player1badInput+=1
+                    em.description = f"{getDisplay()}"
+                    em.color = 0xFF0000
+                    em.add_field(name="Error", value=f"{gameMsg}", inline=False)
+                    await boardMessage.edit(embed=em)
+                    continue
                 await ctx.channel.delete_messages(await self.getMessages(ctx,1))
+                turn += 1
+                movePiece(msg.content)
+                em.color = 0x00FF00
+                em.description = f"{getDisplay()}"
+                em.add_field(name=f"{otherPlayer}'s turn:", value=f"{gameMsg}", inline=False)
+                await boardMessage.edit(embed=em)
                 gameLoop = True
-                currentPlayer = player2
-                otherPlayer = player1
-                turns +=1
-                currentPlayerId=2
+                currentPlayer,otherPlayer = otherPlayer,currentPlayer
+                currentPlayerId = 2 if (currentPlayerId == 1) else 1
+                player1badInput = 0
+                prevMove = msg.content
                 break;
             except asyncio.exceptions.TimeoutError:
-                em = discord.Embed()
-                if(player1==player2):
-                    em.title = f"{player2} challenged themselves to a game of chess (wow you're lonely)"
-                else:
-                    em.title = f'{player2} challenged {player1} to a game of chess'
                 em.description = f"{getDisplay()}"
-                em.color = 0x444444
+                em.color = 0xFF0000
                 em.add_field(name=f"{player1}", value="Game timed out", inline=False)
                 await boardMessage.edit(embed=em)
                 return
-            except ValueError:
-                em = discord.Embed()
-                if(player1==player2):
-                    em.title = f"{player2} challenged themselves to a game of chess (wow you're lonely)"
-                else:
-                    em.title = f'{player2} challenged {player1} to a game of chess'
+            if(player1badInput==3):
                 em.description = f"{getDisplay()}"
-                em.color = 0x444444
-                em.add_field(name=f"{player1}", value=f"Enter a valid coordinate pair for the piece", inline=False)
-                em.add_field(name=f"Error:", value=f"{checkmove}", inline=False)
-                await boardMessage.edit(embed=em)
-                badInput+=1
-            if(badInput==3):
-                em = discord.Embed()
-                if(player1==player2):
-                    em.title = f"{player2} challenged themselves to a game of chess (wow you're lonely)"
-                else:
-                    em.title = f'{player2} challenged {player1} to a game of chess'
-                em.description = f"{getDisplay()}"
-                em.color = 0x444444
+                em.color = 0xFF0000
                 em.add_field(name=f"{player1}", value="Did not enter a valid move in 3 tries. Game ended.", inline=False)
                 await boardMessage.edit(embed=em)
                 return
-        winningComment=""
-        winner=""
+        #Main game loop
         while gameLoop:
-            pass
+            try:
+                em = discord.Embed()
+                em.title = f'Chess match between {player2} and {player1}'
+                em.add_field(name="Moves:", value=f"Type the 2 coordinates for the piece you want to move and the spot to move to, or type 'quit' to stop the game.", inline=False)
+                msg = await self.bot.wait_for('message',check=lambda message: message.author.name == currentPlayer, timeout=30)
+                gameMsg = checkPlayerMove(msg.content,castlingDict)
+                if(msg.content[0:4]=="quit"):
+                    em.color = 0x770000
+                    em.description = f"{getDisplay()}"
+                    em.add_field(name=f"{currentPlayer} Quits", value=f"{otherPlayer} wins!", inline=False)
+                    await boardMessage.edit(embed=em)
+                    return
+                elif(gameMsg == "That piece can not move there"):
+                    coords = msg.content.split(" ")
+                    if(inCheck(parseMove(coords[0]),parseMove(coords[1]))):
+                        em.color = 0xFF0000
+                        em.description = f"{getDisplay()}"
+                        em.add_field(name="Error", value=f"Can not move into check", inline=False)
+                    else:
+                        em.color = 0x770000
+                        em.description = f"{getDisplay()}"
+                        em.add_field(name="Invalid Move", value=f"{gameMsg}", inline=False)
+                    await boardMessage.edit(embed=em)
+                    continue
+                elif(gameMsg[0:4]!="Turn"):
+                    if(currentPlayer == player1):
+                        player1badInput+=1
+                    else:
+                        player2badInput+=1
+                    em.color = 0x770000
+                    em.description = f"{getDisplay()}"
+                    em.add_field(name="Invalid Move", value=f"{gameMsg}", inline=False)
+                    await boardMessage.edit(embed=em)
+                    continue
+                await ctx.channel.delete_messages(await self.getMessages(ctx,1))
+                turn += 1
+                movePiece(msg.content)
+                em.description = f"{getDisplay()}"
+                em.color = 0x00FF00
+                em.add_field(name=f"{otherPlayer}'s turn:", value=f"{gameMsg}", inline=False)
+                if(currentPlayerId == 1):
+                    player1badInput = 0
+                elif(currentPlayerId == 2):
+                    player2badInput = 0
+                currentPlayer,otherPlayer = otherPlayer,currentPlayer
+                currentPlayerId = 2 if (currentPlayerId == 1) else 1
+                prevMove = msg.content
+                await boardMessage.edit(embed=em)
+            except asyncio.exceptions.TimeoutError:
+                em.description = f"{getDisplay()}"
+                em.color = 0x770000
+                em.add_field(name=f"{currentPlayer} Forfeit", value="Didn't make a move within 30 seconds", inline=False)
+                await boardMessage.edit(embed=em)
+                return
+            if(player1badInput==3):
+                em.description = f"{getDisplay()}"
+                em.color = 0x770000
+                em.add_field(name=f"{player1} Forfeit", value="Did not enter a valid move in 3 tries. Game ended.", inline=False)
+                await boardMessage.edit(embed=em)
+                return
+            if(player2badInput==3):
+                em.description = f"{getDisplay()}"
+                em.color = 0x770000
+                em.add_field(name=f"{player2} Forfeit", value="Did not enter a valid move in 3 tries. Game ended.", inline=False)
+                await boardMessage.edit(embed=em)
+                return
+
+       #ToDO
+       #Finish castling (move the rook)
+       #check
+
+        
 
 
 
@@ -669,3 +712,9 @@ class Games(commands.Cog):
         em.description = f"{error}"
         em.color = 0xEE0000
         await ctx.send(embed=em)
+
+#for running in vscode coderunner
+if __name__ == '__main__':
+    import sys, os
+    sys.path.append(os.path.abspath('.'))
+    import bot

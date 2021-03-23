@@ -57,6 +57,7 @@ async def on_message(message):
         await message.channel.send('Mine is longer\n8'+ '='*(maxLen-1) + 'D')
     elif (message.content.lower().find("loli")!=-1):
         await message.channel.send('WEE WOO WEE WOO NO LEWDING LOLIS\nhttps://cdn.discordapp.com/attachments/569020987710898217/665355402199826463/53muboc5hv941.jpg')
+    
     elif (message.content!="" and message.content[0]=='/'):
         await bot.process_commands(message)
 
