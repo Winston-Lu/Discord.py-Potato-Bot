@@ -76,5 +76,7 @@ If you didn't know already, your bot token should be in the token.txt file. If y
 ## **To Do**
 ### Games
 - More games that dont require a "secret" hand/board like poker, uno, battleship, etc. Games like minesweeper, solitare, but multiplayer
+### Image to Braille Converter
+- Convert an image to ASCII-like art using braille characters
 ### Google Translate Bug
 - Ongoing bug with NoneType object has no attribute 'group'. Fix is documented here. https://stackoverflow.com/questions/52455774/googletrans-stopped-working-with-error-nonetype-object-has-no-attribute-group, but doesnt seem to work at the moment. Seems like an ongoing issue
