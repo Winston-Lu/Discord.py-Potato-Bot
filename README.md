@@ -76,6 +76,7 @@ If you didn't know already, your bot token should be in the token.txt file. If y
 ## **To Do**
 ### Games
 - More games that dont require a "secret" hand/board like poker, uno, battleship, etc. Games like minesweeper, solitare, but multiplayer
+- Chess only supports moving and capturing. Game doesn't know when a player is in check, checkmate, or stalemate. Work on checking for "checks"
 ### Image to Braille Converter
 - Convert an image to ASCII-like art using braille characters
 ### Google Translate Bug
