@@ -2,6 +2,8 @@
 
 A bot for Discord written for Python 3.7.3+ as a general purpose utility bot. This bot was meant to replace my original discord.<i></i>py bot after the [Discord.py](https://github.com/Rapptz/discord.py) rewrite.
 
+Discord slash seems to be the way to go, but would require a major rewrite of many modules. This is likely going to be done in a future project. This will serve as a legacy bot until I get around to rewriting a bot for discord slash
+
 ## **Features:  type '/help' in Discord for more information**
 ### Music player (Heavily based off vbe0201's example, see Credit for more info)
 * join - joins voice channel
