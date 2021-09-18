@@ -2,6 +2,8 @@
 
 A bot for Discord written for Python 3.7.3+ as a general purpose utility bot. This bot was meant to replace my original discord.<i></i>py bot after the [Discord.py](https://github.com/Rapptz/discord.py) rewrite.
 
+Discord slash seems to be the way to go, but would require a major rewrite of many modules. This is likely going to be done in a future project. This will serve as a legacy bot until I get around to rewriting a bot for discord slash
+
 ## **Features:  type '/help' in Discord for more information**
 ### Music player (Heavily based off vbe0201's example, see Credit for more info)
 * join - joins voice channel
@@ -32,6 +34,7 @@ A bot for Discord written for Python 3.7.3+ as a general purpose utility bot. Th
 
 ### Games
 * Connect 4 - Self explanitory, can also change size of board
+* Chess - Self explanitry. Works by inputting 2 sets of coordinates. Still a work in progress
 
 ### General
 * Ping - Responds with latency to Discord servers
@@ -75,5 +78,8 @@ If you didn't know already, your bot token should be in the token.txt file. If y
 ## **To Do**
 ### Games
 - More games that dont require a "secret" hand/board like poker, uno, battleship, etc. Games like minesweeper, solitare, but multiplayer
+- Chess only supports moving and capturing. Game doesn't know when a player is in check, checkmate, or stalemate. Work on checking for "checks"
+### Image to Braille Converter
+- Convert an image to ASCII-like art using braille characters
 ### Google Translate Bug
 - Ongoing bug with NoneType object has no attribute 'group'. Fix is documented here. https://stackoverflow.com/questions/52455774/googletrans-stopped-working-with-error-nonetype-object-has-no-attribute-group, but doesnt seem to work at the moment. Seems like an ongoing issue
