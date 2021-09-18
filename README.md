@@ -5,21 +5,18 @@ A bot for Discord written for Python 3.7.3+ as a general purpose utility bot. Th
 Discord slash seems to be the way to go, but would require a major rewrite of many modules. This is likely going to be done in a future project. This will serve as a legacy bot until I get around to rewriting a bot for discord slash
 
 ## **Features:  type '/help' in Discord for more information**
-### Music player (Heavily based off vbe0201's example, see Credit for more info)
+### Music player (Heavily based off JohnDavids's example, see Credit for more info)
 * join - joins voice channel
 * leave - leaves voice channel
 * play - gets video from url or the search query provided
 * volume - changes volume
-* mute - mutes bot, but continues song. Equivalent to volume 0
-* info - gets inforrmation about the currently playing track
+* song-info - gets inforrmation about the currently playing track
 * pause - pauses track
 * resume - resumes track
 * stop - stops the player and clears queue
 * skip - skips currently playing track
 * queue - shows queued up tracks
-* shuffle - shuffles the queue
-* remove - removes track at index position. Index starts at 1
-* loop - loops currently playing song. Trying loop untoggles it and continues the queue
+* repeat - loops currently playing song. Trying loop untoggles it and continues the queue
 
 ### Image manipulation
 * fry - deepfries an image
@@ -41,7 +38,7 @@ Discord slash seems to be the way to go, but would require a major rewrite of ma
 * say - Makes bot say something
 
 ## Credit
-For music integration, the code from my music.py file was built on top of [vbe0201's example here](https://gist.github.com/vbe0201/ade9b80f2d3b64643d854938d40a0a2d), with a bit modifications to most commands to handle errors, fix broken features, and add additional features
+For music integration, the code from music.py file was almost entirely ripped from [JohnDavid's repo here](https://github.com/MrrVit665/Discord-Bot-Music-python/).
 
 ## **Installation**
 ### GNU/Linux
