@@ -2,6 +2,8 @@
 import discord
 from discord.ext import commands
 import asyncio
+from discord_slash import SlashCommand
+from discord_slash.utils.manage_commands import create_option
 
 import random
 import math 
@@ -12,12 +14,13 @@ import threading
 
 # Import additional modules
 from Cogs import games
-from Cogs import music
 from Cogs import images
 from Cogs import google
 
 bot = commands.Bot(command_prefix='/',description="Gaem suxs")
 bot.remove_command('help')
+slash = SlashCommand(bot, sync_commands=True)
+guild_ids = [393652537733152768]
 
 removedMessages = {} #removed by bot
 userDeletedMessages = {} #removed by user
@@ -61,9 +64,19 @@ async def on_message(message):
     elif (message.content!="" and message.content[0]=='/'):
         await bot.process_commands(message)
 
+@slash.slash(name="say",
+             description="Makes the bot say something",
+             options=[
+               create_option(
+                 name="message",
+                 description="Whatever you want it to say",
+                 option_type=3, #3=str, 4=int, 5=bool, 6=user, 7=channel, 8=role
+                 required=True
+               )
+             ])
 @bot.command(pass_context=True)
-async def say(ctx,*command):
-    if(len(command)==0):
+async def say(ctx,message):
+    if(len(message)==0):
         em = discord.Embed()
         em.title = f'Usage: /say [x]'
         em.description = f'Says whatever is after /say'
@@ -72,10 +85,11 @@ async def say(ctx,*command):
         await ctx.send(embed=em)
         return
     phrase = ""
-    for word in command:
-        phrase += word + " "
+    for word in message:
+        phrase += word
     await ctx.send(phrase)
 
+@slash.slash(name="ping", description="Prints the latency to the Discord server",)
 @bot.command(pass_context=True)
 async def ping(ctx,help=""):
     if(help.find('help')!=-1):
@@ -94,6 +108,17 @@ async def ping(ctx,help=""):
     await ctx.send(embed=em)
         
 ## ------------------------------- Bro-gramming ---------------------------------------------##
+# @slash.slash(name="python",
+#          guild_ids = guild_ids,
+#          description="Executes python code",
+#          options=[
+#            create_option(
+#              name="command",
+#              description="Python code",
+#              option_type=3, #3=str, 4=int, 5=bool, 6=user, 7=channel, 8=role
+#              required=True
+#            )
+#          ]) 
 @bot.command(pass_context=True)
 async def python(ctx,*,command=""):
     #-------------- Help section ------------------#
@@ -156,7 +181,7 @@ async def python(ctx,*,command=""):
         await ctx.send(embed=em)
         return
 
-@python.error
+
 async def python_error(ctx,error):
     em = discord.Embed()
     em.title = 'Error'
@@ -166,6 +191,17 @@ async def python_error(ctx,error):
     return
 
 ## ----------------------- Chat moderation/manipulation ------------------------------------ ##
+@slash.slash(name="clear",
+             guild_ids = guild_ids,
+             description="Deletes multiple messages",
+             options=[
+               create_option(
+                 name="length",
+                 description="How many messages to delete",
+                 option_type=3, #3=str, 4=int, 5=bool, 6=user, 7=channel, 8=role
+                 required=True
+               )
+             ])
 @bot.command(pass_context=True,aliases=['delete','purge'])
 @commands.has_permissions(manage_messages=True)
 async def clear(ctx,length=""):
@@ -244,7 +280,7 @@ async def clear(ctx,length=""):
     removedMessages[ctx.channel.id] =  messageCache
     ##delete messages specified by the user
     await ctx.channel.delete_messages(mgs)
-
+"""
 @clear.error
 async def clear_error(ctx,error):
     if isinstance(error, commands.errors.MissingRequiredArgument):
@@ -280,7 +316,7 @@ async def clear_error(ctx,error):
 
 
     message = await getMessages(ctx,1)
-    await ctx.send(message[0].attachments[0].url) 
+    await ctx.send(message[0].attachments[0].url) """
 
 @bot.command(pass_context=True)
 async def undo(ctx,help=""):
@@ -454,7 +490,7 @@ bot.add_cog(images.Images(bot))
 ## ---------------------- Games  ---------------------------- ##
 bot.add_cog(games.Games(bot))
 ## ---------------------- Music ----------------------------- ##
-bot.add_cog(music.Music(bot)) #very simple, 2 lines of code to add music (import music), not including the lines in music.py that someone painstakingly wrote that isnt myself
+bot.load_extension('music')
 ## ----------------- Google Searches ------------------------ ##
 bot.add_cog(google.Google(bot))
 
@@ -498,26 +534,23 @@ async def help(ctx):
     em.description = "Thanks to vbe0201's for this example framework"
     em.color = 0x22BBFF
     em.add_field(name="/play URL|SEARCH", value="Plays audio from Youtube URL or search a video", inline=True)
-    em.add_field(name="/volume NUM", value="Sets volume from 0% to 200%", inline=True)
-    em.add_field(name="/mute", value="Sets volume to 0%", inline=True)
-    em.add_field(name="/unmute", value="Restores volume to original value", inline=True)
-    em.add_field(name="/stop", value="Stops currently playing song", inline=True)
-    em.add_field(name="/join", value="Joins voice channel", inline=True)
-    em.add_field(name="/leave | /disconnect", value="Leaves voice channel", inline=True)
-    em.add_field(name="/info | /current | /playing", value="Gets info about the currently playing track", inline=True)
-    em.add_field(name="/pause", value="Pauses the currently playing track", inline=True)
+    em.add_field(name="/pause", value="Pauses the current song", inline=True)
     em.add_field(name="/resume", value="Resumes the currently playing track", inline=True)
-    em.add_field(name="/skip", value="Skips the currently playing track", inline=True)
+    em.add_field(name="/volume", value="Sets the global bot volume [0-200]", inline=True)
+    em.add_field(name="/repeat", value="Repeats the currently playing song. Type again to toggle off", inline=True)
+    em.add_field(name="/reset", value="Starts the current song from the start", inline=True)
+    em.add_field(name="/skip", value="Stops currently playing song", inline=True)
+    em.add_field(name="/stop", value="Stops the song and clear the queue", inline=True)
+    em.add_field(name="/join ", value="Leaves voice channel", inline=True)
+    em.add_field(name="/leave ", value="Leaves voice channel", inline=True)
     em.add_field(name="/queue", value="Shows the video queue", inline=True)
-    em.add_field(name="/shuffle", value="Shuffles the video queue around", inline=True)
-    em.add_field(name="/remove INDEX", value="Removes the video in the queue at INDEX (starts at 1)", inline=True)
-    em.add_field(name="/loop", value="Loops the currently playing track. Run again to unloop", inline=True)
+    em.add_field(name="/song-info", value="Shows the video information", inline=True)
     await ctx.send(embed=em)
 
 ## --------------------- Others ------------------------------ ##
 @bot.command(pass_context=True)
 async def test(ctx,help="",amount="10"):
-    print(userDeletedMessages)
+    print(ctx.author.id)
     
 @bot.command(pass_context=True)
 async def spam(ctx,help="",amount="10"):   
