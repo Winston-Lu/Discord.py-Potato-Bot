@@ -587,9 +587,6 @@ class MusicPlayer(commands.Cog, name='Music'):
         `Permission:` manage_channels
         `Command:` volume(amount:integer)
         """
-
-        if vol > 200:
-            vol = 200
         vol = vol/100
         if msg.author.voice is not None:
             if msg.voice_client is not None:
