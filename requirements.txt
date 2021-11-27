@@ -12,3 +12,4 @@ pynacl>=1.4.0
 googletrans>=3.0.0
 yt_dlp>=3.11.0
 discord-py-slash-command>=3.0.1
+google-api-python-client>=2.31.0
