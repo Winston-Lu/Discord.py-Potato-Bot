@@ -1,7 +1,7 @@
 import discord
 import asyncio
 import random
-import youtube_dl
+import yt_dlp
 import string
 import os
 from discord.ext import commands
@@ -118,7 +118,7 @@ class Downloader(discord.PCMVolumeTransformer):
         """
         Get the info of the next song by not downloading the actual file but just the data of song/query
         """
-        yt = youtube_dl.YoutubeDL(stim)
+        yt = yt_dlp.YoutubeDL(stim)
         down = yt.extract_info(url, download=False)
         data1 = {'queue': []}
         if 'entries' in down:
@@ -207,9 +207,8 @@ class MusicPlayer(commands.Cog, name='Music'):
             await self.playlist(data, msg)
             # NOTE: needs to be embeded to make it better output
             return await msg.send(f"Added playlist {data['title']} to queue")
-        self.player[msg.guild.id]['queue'].append(
-            {'title': title, 'author': msg})
-        return await msg.send(f"**{title} added to queue**".title())
+        self.player[msg.guild.id]['queue'].append({'title': title['title'], 'author': msg})
+        return await msg.send(f"**{title['title']} added to queue**".title())
 
     async def voice_check(self, msg):
         """
@@ -283,8 +282,11 @@ class MusicPlayer(commands.Cog, name='Music'):
         self.player['audio_files'].append(audio_name)
         new_opts['outtmpl'] = new_opts['outtmpl'].format(audio_name)
 
-        ytdl = youtube_dl.YoutubeDL(new_opts)
-        download1 = await Downloader.video_url(song, ytdl=ytdl, loop=self.bot.loop)
+        ytdl = yt_dlp.YoutubeDL(new_opts)
+        try:
+            download1 = await Downloader.video_url(song, ytdl=ytdl, loop=self.bot.loop)
+        except TypeError as e:
+            await msg.send(f'{e}: Unable to play song')
         download = download1[0]
         data = download1[1]
         self.player[msg.guild.id]['name'] = audio_name
@@ -608,7 +610,7 @@ class MusicPlayer(commands.Cog, name='Music'):
         `NOTE`: file size can't exceed 8MB, otherwise it will fail to upload and cause error
         """
         try:
-            with youtube_dl.YoutubeDL(ytdl_download_format_options) as ydl:
+            with yt_dlp.YoutubeDL(ytdl_download_format_options) as ydl:
                 if "https://www.youtube.com/" in song:
                     download = ydl.extract_info(song, True)
                 else:
@@ -622,7 +624,7 @@ class MusicPlayer(commands.Cog, name='Music'):
                 await ctx.send(embed=embed, delete_after=30)
                 await ctx.send(file=discord.File(filename))
                 os.remove(filename)
-        except (youtube_dl.utils.ExtractorError, youtube_dl.utils.DownloadError):
+        except (yt_dlp.utils.ExtractorError, yt_dlp.utils.DownloadError):
             embed = discord.Embed(title="Song couldn't be downloaded", description=("Song:"+song))
             await ctx.send(embed=embed)
 
