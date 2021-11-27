@@ -1,4 +1,4 @@
-async_timeout==3.0.1
+async_timeout>=2.0.1
 requests==2.23.0
 scikit-image==0.17.2
 scikit-build==0.11.1
