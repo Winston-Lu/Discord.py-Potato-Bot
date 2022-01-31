@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import os
 import discord
 from discord.ext import commands
 import asyncio
@@ -12,15 +13,30 @@ import numpy as np
 import platform
 import threading
 
+# Music stuff
+from musicconfig import config
+from musicbot.audiocontroller import AudioController
+from musicbot.settings import Settings
+from musicbot.utils import guild_to_audiocontroller, guild_to_settings
+initial_extensions = ['musicbot.commands.music',
+                      'musicbot.commands.general', 'musicbot.plugins.button']
+        
 # Import additional modules
 from Cogs import games
 from Cogs import images
 from Cogs import google
 
-bot = commands.Bot(command_prefix='/',description="Gaem suxs")
+bot = commands.Bot(command_prefix='/',pm_help=True,description="Gaem suxs")
+config.ABSOLUTE_PATH = os.path.dirname(os.path.abspath(__file__))
+config.COOKIE_PATH = config.ABSOLUTE_PATH + config.COOKIE_PATH
 bot.remove_command('help')
 slash = SlashCommand(bot, sync_commands=True)
 guild_ids = [393652537733152768]
+for extension in initial_extensions:
+    try:
+        bot.load_extension(extension)
+    except Exception as e:
+        print("Extension loading error: " + e)
 
 removedMessages = {} #removed by bot
 userDeletedMessages = {} #removed by user
@@ -37,10 +53,42 @@ async def on_connect(): #Running this during on_connect since bots can parse com
     print("Started up on " + strftime("%B-%d-%Y %H:%M:%S", time.localtime()))
     random.seed(time.time())
     await bot.change_presence(status=discord.Status.online, afk=False, activity=discord.Game(name='HuniePop 2: Double Date'))
+    
+
+async def register(guild):
+    guild_to_settings[guild] = Settings(guild)
+    guild_to_audiocontroller[guild] = AudioController(bot, guild)
+    sett = guild_to_settings[guild]
+    try:
+        await guild.me.edit(nick=sett.get('default_nickname'))
+    except:
+        pass
+    if config.GLOBAL_DISABLE_AUTOJOIN_VC == True:
+        return
+        vc_channels = guild.voice_channels
+    if sett.get('vc_timeout') == False:
+        if sett.get('start_voice_channel') == None:
+            try:
+                await guild_to_audiocontroller[guild].register_voice_channel(guild.voice_channels[0])
+            except Exception as e:
+                print(e)
+        else:
+            for vc in vc_channels:
+                if vc.id == sett.get('start_voice_channel'):
+                    try:
+                        await guild_to_audiocontroller[guild].register_voice_channel(vc_channels[vc_channels.index(vc)])
+                    except Exception as e:
+                        print(e)
 
 @bot.event
 async def on_ready():
-    pass
+    for guild in bot.guilds:
+        await register(guild)
+        print(f"Joined {guild.name}")
+
+@bot.event
+async def on_guild_join(guild):
+    await register(guild)
 
 ## ----------------------------- General commands ------------------------------------------- ##
 @bot.event
@@ -490,7 +538,7 @@ bot.add_cog(images.Images(bot))
 ## ---------------------- Games  ---------------------------- ##
 bot.add_cog(games.Games(bot))
 ## ---------------------- Music ----------------------------- ##
-bot.load_extension('music')
+#bot.load_extension('music')
 ## ----------------- Google Searches ------------------------ ##
 bot.add_cog(google.Google(bot))
 
@@ -685,7 +733,7 @@ try:
     file = open("token.txt",'r')
     token = file.read()
     file.close()
-    bot.run(token)
+    bot.run(token, bot=True, reconnect=True)
 except:
     print("Token.txt not found")
 ###==============================================###

@@ -38,7 +38,7 @@ Discord slash seems to be the way to go, but would require a major rewrite of ma
 * say - Makes bot say something
 
 ## Credit
-For music integration, the code from music.py file was almost entirely ripped from [JohnDavid's repo here](https://github.com/MrrVit665/Discord-Bot-Music-python/).
+I ripped and adapted the Spotify player from [Raptor123471's repo here](https://github.com/Raptor123471/DingoLingo)
 
 ## **Installation**
 ### GNU/Linux
@@ -69,8 +69,9 @@ Then install [ffmpeg.exe from this link](https://ffmpeg.zeranoe.com/builds/), an
 python3 "bot.py"
 ```
 
-### **Token.txt**
+### **token.txt and spotify.txt**
 If you didn't know already, your bot token should be in the token.txt file. If you don't know how to get your bot token, [follow this guide here](https://www.writebots.com/discord-bot-token/) 
+spotify.txt should contain the Client ID and the Client Secret on the next line. [See here for setup.](https://github.com/Raptor123471/DingoLingo)
 
 ## **To Do**
 ### Games
