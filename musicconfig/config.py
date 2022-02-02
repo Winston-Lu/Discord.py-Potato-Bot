@@ -1,8 +1,6 @@
 with open("spotify.txt") as f:
     SPOTIFY_ID, SPOTIFY_SECRET = [line.strip() for line in f.readlines()] #first line is ID, 2nd line is secret
 
-print(SPOTIFY_ID, SPOTIFY_SECRET)
-
 with open('token.txt') as f:
     BOT_TOKEN = f.readline()
 
